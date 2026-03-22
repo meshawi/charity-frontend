@@ -561,7 +561,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => navigate(isViewMode ? -1 : "/beneficiaries")}
+            onClick={() => isViewMode ? navigate(-1) : navigate("/beneficiaries")}
           >
             <ArrowRight className="size-4" />
           </Button>
