@@ -9,6 +9,7 @@ export type User = {
   nationalId: string
   name: string
   avatar: string | null
+  isSuperAdmin: boolean
   createdAt: string
   roles: string[]
   permissions: Permission[]

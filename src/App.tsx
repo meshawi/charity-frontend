@@ -11,6 +11,10 @@ import BeneficiaryDetailPage from "@/pages/beneficiary-detail"
 import DisbursementProcessPage from "@/pages/disbursement-process"
 import DisbursementsPage from "@/pages/disbursements"
 import ReportsPage from "@/pages/reports"
+import RolesPage from "@/pages/roles"
+import ReviewQueuePage from "@/pages/review-queue"
+import ProgramRecipientsPage from "@/pages/program-recipients"
+import FieldConfigPage from "@/pages/field-config"
 
 export default function App() {
   return (
@@ -20,12 +24,22 @@ export default function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/users" element={<UsersPage />} />
+          <Route path="/roles" element={<RolesPage />} />
+          <Route path="/review-queue" element={<ReviewQueuePage />} />
           <Route path="/categories" element={<CategoriesPage />} />
           <Route path="/programs" element={<ProgramsPage />} />
+          <Route
+            path="/programs/:id/recipients"
+            element={<ProgramRecipientsPage />}
+          />
           <Route path="/beneficiaries" element={<BeneficiariesPage />} />
           <Route
             path="/beneficiaries/:id"
             element={<BeneficiaryDetailPage />}
+          />
+          <Route
+            path="/beneficiaries/:id/view"
+            element={<BeneficiaryDetailPage viewOnly />}
           />
           <Route
             path="/disbursement"
@@ -36,6 +50,7 @@ export default function App() {
             element={<DisbursementsPage />}
           />
           <Route path="/reports" element={<ReportsPage />} />
+          <Route path="/field-config" element={<FieldConfigPage />} />
         </Route>
       </Route>
     </Routes>

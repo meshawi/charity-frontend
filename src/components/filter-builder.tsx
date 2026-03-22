@@ -15,29 +15,39 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { X, Plus, SlidersHorizontal } from "lucide-react"
-
-const OPERATOR_LABELS: Record<string, string> = {
-  eq: "مطابق",
-  like: "يحتوي",
-  in: "أحد",
-  gte: "≥",
-  lte: "≤",
-  gt: ">",
-  lt: "<",
-}
-
-const OPERATOR_LABELS_DATE: Record<string, string> = {
-  eq: "=",
-  gte: "من",
-  lte: "إلى",
-}
+import { X, Plus, SlidersHorizontal, Save, FolderOpen, Trash2 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type FilterRow = {
   id: number
   field: string
   op: FilterOperator
   value: string | number | boolean | (string | number)[]
+}
+
+type FilterPreset = {
+  name: string
+  rows: Omit<FilterRow, "id">[]
+}
+
+const PRESETS_KEY = "filter-presets"
+
+function loadPresets(): FilterPreset[] {
+  try {
+    const raw = localStorage.getItem(PRESETS_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch {
+    return []
+  }
+}
+
+function savePresets(presets: FilterPreset[]) {
+  localStorage.setItem(PRESETS_KEY, JSON.stringify(presets))
 }
 
 let nextId = 1
@@ -51,6 +61,7 @@ export function FilterBuilder({
 }) {
   const [rows, setRows] = React.useState<FilterRow[]>([])
   const [open, setOpen] = React.useState(false)
+  const [presets, setPresets] = React.useState<FilterPreset[]>(loadPresets)
 
   const fieldsByKey = React.useMemo(() => {
     const map: Record<string, FilterField> = {}
@@ -88,8 +99,8 @@ export function FilterBuilder({
       {
         id: nextId++,
         field: firstField.key,
-        op: firstField.operators[0],
-        value: getDefaultValue(firstField, firstField.operators[0]),
+        op: firstField.operators[0].value,
+        value: getDefaultValue(firstField, firstField.operators[0].value),
       },
     ])
     setOpen(true)
@@ -117,8 +128,8 @@ export function FilterBuilder({
         return {
           ...r,
           field: fieldKey,
-          op: f.operators[0],
-          value: getDefaultValue(f, f.operators[0]),
+          op: f.operators[0].value,
+          value: getDefaultValue(f, f.operators[0].value),
         }
       })
     )
@@ -151,6 +162,30 @@ export function FilterBuilder({
     )
   }
 
+  function handleSavePreset() {
+    const name = prompt("اسم الفلتر المحفوظ:")
+    if (!name?.trim()) return
+    const preset: FilterPreset = {
+      name: name.trim(),
+      rows: rows.map(({ field, op, value }) => ({ field, op, value })),
+    }
+    const updated = [...presets.filter((p) => p.name !== preset.name), preset]
+    setPresets(updated)
+    savePresets(updated)
+  }
+
+  function handleLoadPreset(preset: FilterPreset) {
+    const loaded = preset.rows.map((r) => ({ ...r, id: nextId++ }))
+    setRows(loaded)
+    setOpen(true)
+  }
+
+  function handleDeletePreset(name: string) {
+    const updated = presets.filter((p) => p.name !== name)
+    setPresets(updated)
+    savePresets(updated)
+  }
+
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
@@ -171,6 +206,43 @@ export function FilterBuilder({
           <Button variant="ghost" size="sm" onClick={clearAll}>
             مسح الكل
           </Button>
+        )}
+        {rows.length > 0 && open && (
+          <Button variant="ghost" size="sm" onClick={handleSavePreset}>
+            <Save className="size-4" />
+            حفظ الفلتر
+          </Button>
+        )}
+        {presets.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <FolderOpen className="size-4" />
+                الفلاتر المحفوظة
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              {presets.map((p) => (
+                <DropdownMenuItem
+                  key={p.name}
+                  onClick={() => handleLoadPreset(p)}
+                  className="justify-between gap-3"
+                >
+                  <span>{p.name}</span>
+                  <button
+                    type="button"
+                    className="text-destructive hover:text-destructive/80"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeletePreset(p.name)
+                    }}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </button>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -230,10 +302,8 @@ export function FilterBuilder({
                       </SelectTrigger>
                       <SelectContent>
                         {field?.operators.map((op) => (
-                          <SelectItem key={op} value={op}>
-                            {field.type === "date"
-                              ? (OPERATOR_LABELS_DATE[op] ?? OPERATOR_LABELS[op])
-                              : OPERATOR_LABELS[op]}
+                          <SelectItem key={op.value} value={op.value}>
+                            {op.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

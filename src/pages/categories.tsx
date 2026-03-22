@@ -32,7 +32,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LoaderCircle, MoreHorizontal, Pencil } from "lucide-react"
+import { LoaderCircle, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function CategoriesPage() {
   const auth = useAuth()
@@ -40,6 +50,9 @@ export default function CategoriesPage() {
   const [loading, setLoading] = React.useState(true)
 
   const [editCategory, setEditCategory] = React.useState<Category | null>(null)
+  const [createOpen, setCreateOpen] = React.useState(false)
+  const [deleteTarget, setDeleteTarget] = React.useState<Category | null>(null)
+  const [deleting, setDeleting] = React.useState(false)
 
   const canManage = auth.hasPermission("manage_categories")
 
@@ -70,6 +83,12 @@ export default function CategoriesPage() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-medium">إدارة التصنيفات</h1>
+        {canManage && (
+          <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-4" />
+            إضافة تصنيف
+          </Button>
+        )}
       </div>
 
       <div className="rounded-lg border">
@@ -114,6 +133,13 @@ export default function CategoriesPage() {
                           <Pencil className="size-4" />
                           تعديل
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => setDeleteTarget(cat)}
+                        >
+                          <Trash2 className="size-4" />
+                          حذف
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -140,6 +166,48 @@ export default function CategoriesPage() {
         onOpenChange={(open) => !open && setEditCategory(null)}
         onSuccess={loadData}
       />
+
+      <CategoryFormDialog
+        open={createOpen}
+        onOpenChange={(open) => !open && setCreateOpen(false)}
+        onSuccess={loadData}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>حذف التصنيف</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من حذف التصنيف "{deleteTarget?.name}"؟ لا يمكن التراجع عن هذا الإجراء.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-white hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={async (e) => {
+                e.preventDefault()
+                if (!deleteTarget) return
+                setDeleting(true)
+                try {
+                  await categoriesApi.deleteCategory(deleteTarget.id)
+                  toast.success("تم حذف التصنيف بنجاح")
+                  setDeleteTarget(null)
+                  loadData()
+                } catch (err) {
+                  toast.error(err instanceof ApiError ? err.message : "حدث خطأ")
+                } finally {
+                  setDeleting(false)
+                }
+              }}
+            >
+              {deleting && <LoaderCircle className="size-4 animate-spin" />}
+              حذف
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -155,15 +223,19 @@ function CategoryFormDialog({
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }) {
+  const isCreate = !category
+  const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [color, setColor] = React.useState("#3b82f6")
   const [submitting, setSubmitting] = React.useState(false)
 
   React.useEffect(() => {
     if (category) {
+      setName(category.name)
       setDescription(category.description || "")
       setColor(category.color)
     } else {
+      setName("")
       setDescription("")
       setColor("#3b82f6")
     }
@@ -171,14 +243,27 @@ function CategoryFormDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!category) return
+    if (!name.trim()) {
+      toast.error("الاسم مطلوب")
+      return
+    }
     setSubmitting(true)
     try {
-      await categoriesApi.updateCategory(category.id, {
-        description: description || undefined,
-        color,
-      })
-      toast.success("تم تحديث التصنيف بنجاح")
+      if (isCreate) {
+        await categoriesApi.createCategory({
+          name: name.trim(),
+          description: description || undefined,
+          color,
+        })
+        toast.success("تم إنشاء التصنيف بنجاح")
+      } else {
+        await categoriesApi.updateCategory(category.id, {
+          name: name.trim(),
+          description: description || undefined,
+          color,
+        })
+        toast.success("تم تحديث التصنيف بنجاح")
+      }
       onOpenChange(false)
       onSuccess()
     } catch (err) {
@@ -194,9 +279,9 @@ function CategoryFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>تعديل التصنيف</DialogTitle>
+          <DialogTitle>{isCreate ? "إضافة تصنيف" : "تعديل التصنيف"}</DialogTitle>
           <DialogDescription>
-            تعديل بيانات {category?.name}
+            {isCreate ? "أدخل بيانات التصنيف الجديد" : `تعديل بيانات ${category?.name}`}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -204,8 +289,8 @@ function CategoryFormDialog({
             <Label htmlFor="cat-name">الاسم</Label>
             <Input
               id="cat-name"
-              value={category?.name ?? ""}
-              disabled
+              value={name}
+              onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="flex flex-col gap-1.5">

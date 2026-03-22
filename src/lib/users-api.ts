@@ -1,7 +1,6 @@
 import { apiClient } from "@/lib/api-client"
 import type {
   UsersListResponse,
-  UserDetailResponse,
   CreateUserRequest,
   CreateUserResponse,
   UpdateUserRequest,
@@ -11,10 +10,6 @@ import type {
 
 export async function getUsers() {
   return apiClient<UsersListResponse>("/users")
-}
-
-export async function getUser(id: number) {
-  return apiClient<UserDetailResponse>(`/users/${id}`)
 }
 
 export async function createUser(data: CreateUserRequest) {
@@ -38,12 +33,15 @@ export async function resetUserPassword(id: number, newPassword: string) {
   })
 }
 
-export async function changeOwnPassword(newPassword: string) {
+export async function changeOwnPassword(
+  currentPassword: string,
+  newPassword: string
+) {
   return apiClient<{ success: true; message: string }>(
     "/users/me/change-password",
     {
       method: "POST",
-      body: { newPassword },
+      body: { currentPassword, newPassword },
     }
   )
 }

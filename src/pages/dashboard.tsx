@@ -11,6 +11,7 @@ import type {
 } from "@/types/dashboard"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { formatDateShort } from "@/lib/date-utils"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import {
   Card,
@@ -125,6 +126,9 @@ export default function DashboardPage() {
         ])
         setStats(statsRes.stats)
         setDailyStats(dailyRes.data)
+        if (dailyRes.defaultChart === "beneficiaries" || dailyRes.defaultChart === "disbursements") {
+          setActiveChart(dailyRes.defaultChart)
+        }
         setRecentProfiles(profilesRes.profiles)
       } catch {
         toast.error("حدث خطأ في تحميل بيانات لوحة التحكم")
@@ -337,29 +341,20 @@ export default function DashboardPage() {
             >
               <CartesianGrid vertical={false} />
               <XAxis
-                dataKey="date"
+                dataKey="dateAr"
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
                 minTickGap={32}
-                tickFormatter={(value) => {
-                  const d = new Date(value)
-                  return d.toLocaleDateString("en", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                }}
               />
               <ChartTooltip
                 content={
                   <ChartTooltipContent
                     className="w-[150px]"
-                    labelFormatter={(value) =>
-                      new Date(value).toLocaleDateString("en", {
-                        month: "short",
-                        day: "numeric",
-                      })
-                    }
+                    labelFormatter={(_value, payload) => {
+                      const point = payload?.[0]?.payload as DailyStatPoint | undefined
+                      return point?.dateAr ?? _value
+                    }}
                   />
                 }
               />
@@ -435,10 +430,7 @@ export default function DashboardPage() {
                           {p.createdBy.name}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {new Date(p.createdAt).toLocaleDateString("en", {
-                            month: "short",
-                            day: "numeric",
-                          })}
+                          {formatDateShort(p.createdAt)}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -478,9 +470,9 @@ function SettingsCard({
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Theme */}
-        <div className="space-y-2">
-          <span className="text-sm font-medium">المظهر</span>
-          <div className="flex gap-3">
+        <div className="space-y-3">
+          <span className="text-sm font-medium ">المظهر</span>
+          <div className="flex gap-3 py-1.5">
             <button
               onClick={() => setTheme("light")}
               className={cn(
@@ -507,13 +499,9 @@ function SettingsCard({
             </button>
           </div>
         </div>
-
-        <hr className="border-border" />
-
         {/* Colors */}
         <div className="space-y-2">
-          <span className="text-sm font-medium">اللون الرئيسي</span>
-          <div className="flex gap-3">
+          <div className="flex justify-center gap-3">
             {COLOR_PRESETS.map((preset) => (
               <button
                 key={preset.value}
@@ -553,6 +541,7 @@ function ChangePasswordDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
+  const [currentPassword, setCurrentPassword] = React.useState("")
   const [newPassword, setNewPassword] = React.useState("")
   const [confirmPassword, setConfirmPassword] = React.useState("")
   const [error, setError] = React.useState("")
@@ -561,17 +550,13 @@ function ChangePasswordDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    if (newPassword.length < 6) {
-      setError("كلمة المرور يجب أن تكون 6 أحرف على الأقل")
-      return
-    }
     if (newPassword !== confirmPassword) {
       setError("كلمتا المرور غير متطابقتين")
       return
     }
     setSubmitting(true)
     try {
-      await changeOwnPassword(newPassword)
+      await changeOwnPassword(currentPassword, newPassword)
       toast.success("تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مجدداً.")
       onOpenChange(false)
       window.location.href = "/login"
@@ -588,17 +573,26 @@ function ChangePasswordDialog({
         <DialogHeader>
           <DialogTitle>تغيير كلمة المرور</DialogTitle>
           <DialogDescription>
-            أدخل كلمة المرور الجديدة. سيتم تسجيل خروجك بعد التغيير.
+            أدخل كلمة المرور الحالية والجديدة. سيتم تسجيل خروجك بعد التغيير.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">كلمة المرور الحالية</label>
+            <Input
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              required
+            />
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">كلمة المرور الجديدة</label>
             <Input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="6 أحرف على الأقل"
+              required
             />
           </div>
           <div className="space-y-2">

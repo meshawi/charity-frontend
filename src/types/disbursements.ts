@@ -106,9 +106,32 @@ export type BeneficiaryDisbursementsResponse = {
   }[]
 }
 
-export type ProgramRecipientsResponse = {
+
+export type ProgramRecipientBeneficiary = {
+  id: number
+  beneficiaryNumber: string
+  name: string | null
+  nationalId: string
+  phone: string | null
+  category: { id: number; name: string; color: string } | null
+  status: "received" | "eligible"
+  disbursement: {
+    id: number
+    disbursedAt: string
+    receiverName: string | null
+    disbursedBy: { id: number; name: string }
+  } | null
+}
+
+export type ProgramRecipientsFilterResponse = {
   success: true
-  program: { id: number; name: string }
-  recipients: DisbursementListItem[]
+  programName: string
+  status: "all" | "received" | "eligible"
+  beneficiaries?: ProgramRecipientBeneficiary[]
+  summary?: {
+    totalQualified: number
+    totalReceived: number
+    totalEligible: number
+  }
   pagination: Pagination
 }

@@ -10,6 +10,7 @@ export type AdminUser = {
   name: string
   avatar: string | null
   isActive: boolean
+  isSuperAdmin: boolean
   createdAt: string
   Roles: Role[]
 }

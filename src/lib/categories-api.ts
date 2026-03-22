@@ -1,7 +1,6 @@
 import { apiClient } from "@/lib/api-client"
 import type {
   CategoriesListResponse,
-  CategoryDetailResponse,
   CreateCategoryRequest,
   UpdateCategoryRequest,
   CategoryMutationResponse,
@@ -10,10 +9,6 @@ import type {
 
 export async function getCategories() {
   return apiClient<CategoriesListResponse>("/categories")
-}
-
-export async function getCategory(id: number) {
-  return apiClient<CategoryDetailResponse>(`/categories/${id}`)
 }
 
 export async function createCategory(data: CreateCategoryRequest) {

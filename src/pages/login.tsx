@@ -108,7 +108,11 @@ export default function LoginPage() {
                   dir="ltr"
                   className="text-left"
                   value={nationalId}
-                  onChange={(e) => setNationalId(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 10)
+                    setNationalId(v)
+                  }}
+                  maxLength={10}
                   required
                   autoComplete="username"
                 />

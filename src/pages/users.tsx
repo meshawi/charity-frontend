@@ -28,19 +28,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   LoaderCircle,
   Plus,
   MoreHorizontal,
   Pencil,
   KeyRound,
-  ShieldCheck,
 } from "lucide-react"
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function UsersPage() {
   const auth = useAuth()
@@ -51,11 +51,9 @@ export default function UsersPage() {
   const [createOpen, setCreateOpen] = React.useState(false)
   const [editUser, setEditUser] = React.useState<AdminUser | null>(null)
   const [resetUser, setResetUser] = React.useState<AdminUser | null>(null)
-  const [rolesDialogOpen, setRolesDialogOpen] = React.useState(false)
 
   const canCreate = auth.hasPermission("create_user")
   const canEdit = auth.hasPermission("edit_user")
-  const canManageRoles = auth.hasPermission("manage_roles")
 
   const loadData = React.useCallback(async () => {
     try {
@@ -91,16 +89,6 @@ export default function UsersPage() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-medium">إدارة المستخدمين</h1>
         <div className="flex gap-2">
-          {canManageRoles && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setRolesDialogOpen(true)}
-            >
-              <ShieldCheck className="size-4" />
-              عرض الأدوار
-            </Button>
-          )}
           {canCreate && (
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus className="size-4" />
@@ -125,7 +113,16 @@ export default function UsersPage() {
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="flex items-center gap-1.5">
+                    {user.name}
+                    {user.isSuperAdmin && (
+                      <Badge variant="destructive" className="text-xs">
+                        مدير النظام
+                      </Badge>
+                    )}
+                  </span>
+                </TableCell>
                 <TableCell dir="ltr" className="text-start">
                   {user.email}
                 </TableCell>
@@ -148,7 +145,7 @@ export default function UsersPage() {
                 </TableCell>
                 {canEdit && (
                   <TableCell>
-                    {user.id !== 1 && (
+                    {!user.isSuperAdmin && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon-sm">
@@ -203,12 +200,6 @@ export default function UsersPage() {
         user={resetUser}
         onOpenChange={(open) => !open && setResetUser(null)}
         onSuccess={() => toast.success("تم إعادة تعيين كلمة المرور بنجاح")}
-      />
-
-      <ViewRolesDialog
-        open={rolesDialogOpen}
-        onOpenChange={setRolesDialogOpen}
-        roles={roles}
       />
     </div>
   )
@@ -309,7 +300,11 @@ function CreateUserDialog({
               className="text-left"
               inputMode="numeric"
               value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 10)
+                setNationalId(v)
+              }}
+              maxLength={10}
             />
           </div>
           <div className="flex flex-col gap-1.5">
@@ -457,7 +452,11 @@ function EditUserDialog({
               className="text-left"
               inputMode="numeric"
               value={nationalId}
-              onChange={(e) => setNationalId(e.target.value)}
+              onChange={(e) => {
+                const v = e.target.value.replace(/\D/g, "").slice(0, 10)
+                setNationalId(v)
+              }}
+              maxLength={10}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -578,61 +577,4 @@ function ResetPasswordDialog({
   )
 }
 
-function ViewRolesDialog({
-  open,
-  onOpenChange,
-  roles,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  roles: RoleWithPermissions[]
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>الأدوار والصلاحيات</DialogTitle>
-          <DialogDescription>
-            جميع الأدوار المتاحة في النظام وصلاحيات كل دور
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          {roles.map((role) => (
-            <div key={role.id} className="rounded-lg border p-4">
-              <div className="mb-1 flex items-center gap-2">
-                <ShieldCheck className="size-4 text-primary" />
-                <span className="font-medium">{role.name}</span>
-              </div>
-              {role.description && (
-                <p className="mb-3 text-sm text-muted-foreground">
-                  {role.description}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-1.5">
-                {role.Permissions.map((perm) => (
-                  <Badge
-                    key={perm.id}
-                    variant="secondary"
-                    title={perm.description || undefined}
-                  >
-                    {perm.label || perm.name}
-                  </Badge>
-                ))}
-                {role.Permissions.length === 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    لا توجد صلاحيات
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-          {roles.length === 0 && (
-            <p className="text-center text-sm text-muted-foreground">
-              لا توجد أدوار
-            </p>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
+

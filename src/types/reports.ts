@@ -12,14 +12,19 @@ export type FilterFieldType =
   | "category"
   | "program"
 
-export type FilterOperator = "eq" | "like" | "in" | "gte" | "lte" | "gt" | "lt"
+export type FilterOperator = "eq" | "ne" | "like" | "in" | "gte" | "lte" | "gt" | "lt"
+
+export type FilterFieldOperator = {
+  value: FilterOperator
+  label: string
+}
 
 export type FilterField = {
   key: string
   label: string
   type: FilterFieldType
   group: string
-  operators: FilterOperator[]
+  operators: FilterFieldOperator[]
   options?: FilterFieldOption[]
 }
 
@@ -37,12 +42,14 @@ export type ActiveFilter = {
 export type FilterBeneficiariesRequest = {
   filters: ActiveFilter[]
   search?: string
+  disbursementStatus?: "received" | "not_received"
   page?: number
   limit?: number
 }
 
 export type ExportBeneficiariesRequest = {
   filters: ActiveFilter[]
+  disbursementStatus?: "received" | "not_received"
 }
 
 export type ExportProgramsRequest = {

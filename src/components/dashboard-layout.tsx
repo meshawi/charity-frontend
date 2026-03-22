@@ -14,6 +14,9 @@ import {
   FileSpreadsheet,
   LogOut,
   Home,
+  ShieldCheck,
+  ClipboardCheck,
+  Settings,
 } from "lucide-react"
 
 type NavItem = {
@@ -29,6 +32,18 @@ const navItems: NavItem[] = [
     label: "المستخدمين",
     icon: <Users className="size-4" />,
     permission: "view_users",
+  },
+  {
+    to: "/roles",
+    label: "الأدوار",
+    icon: <ShieldCheck className="size-4" />,
+    permission: "manage_roles",
+  },
+  {
+    to: "/review-queue",
+    label: "المراجعة",
+    icon: <ClipboardCheck className="size-4" />,
+    permission: "assign_category",
   },
   {
     to: "/categories",
@@ -64,6 +79,12 @@ const navItems: NavItem[] = [
     icon: <FileSpreadsheet className="size-4" />,
     permission: "view_reports",
   },
+  {
+    to: "/field-config",
+    label: "إعدادات الحقول",
+    icon: <Settings className="size-4" />,
+    permission: "manage_field_config",
+  },
 ]
 
 export function DashboardLayout() {
@@ -92,7 +113,7 @@ export function DashboardLayout() {
 
   return (
     <div className="flex min-h-svh">
-      <aside className="flex w-56 shrink-0 flex-col border-e bg-card">
+      <aside className="sticky top-0 flex h-svh w-56 shrink-0 flex-col overflow-y-auto border-e bg-card">
         <div className="p-4">
           <h2 className="text-sm font-medium">نظام إدارة الجمعية</h2>
         </div>

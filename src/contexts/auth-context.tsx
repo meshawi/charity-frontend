@@ -54,6 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasPermission = React.useCallback(
     (permission: string) => {
       if (state.status !== "authenticated") return false
+      if (state.user.isSuperAdmin) return true
       return state.user.permissions.some((p) => p.name === permission)
     },
     [state]

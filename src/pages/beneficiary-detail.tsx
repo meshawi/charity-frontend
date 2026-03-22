@@ -1,9 +1,10 @@
 ﻿import * as React from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import * as beneficiariesApi from "@/lib/beneficiaries-api"
 import * as dependentsApi from "@/lib/dependents-api"
 import * as categoriesApi from "@/lib/categories-api"
+import { getAcknowledgmentUrl } from "@/lib/disbursements-api"
 import type {
   Beneficiary,
   BeneficiaryDisbursement,
@@ -17,8 +18,15 @@ import type {
   IncomeItem,
   FinancialObligations,
   ObligationItem,
+  DependentReligious,
+  DependentReligiousItem,
+  DocumentType,
+  ProgressResponse,
+  SubmitReviewErrorDetails,
 } from "@/types/beneficiaries"
 import type { Category } from "@/types/categories"
+import { GENDER_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
+import { formatDate } from "@/lib/date-utils"
 import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -77,12 +85,12 @@ import {
   Trash2,
   History,
   Tag,
+  Send,
+  AlertTriangle,
+  Upload,
+  Download,
+  Eye,
 } from "lucide-react"
-
-const GENDER_LABELS: Record<string, string> = {
-  male: "ذكر",
-  female: "أنثى",
-}
 
 const MARITAL_LABELS: Record<string, string> = {
   married: "متزوج / متزوجة",
@@ -207,6 +215,34 @@ const RELIGIOUS_KEYS: { key: keyof ReligiousVisits; label: string }[] = [
   { key: "prophetMosque", label: "هل تمت زيارة المسجد النبوي" },
 ]
 
+const DEP_RELIGIOUS_KEYS: { key: keyof DependentReligious; label: string }[] = [
+  { key: "hajj", label: "هل تم تأدية الحج" },
+  { key: "umrah", label: "هل تم تأدية العمرة" },
+  { key: "prophetMosque", label: "هل تمت زيارة المسجد النبوي" },
+]
+
+function calculateAge(dateOfBirth: string | null): number | null {
+  if (!dateOfBirth) return null
+  const birth = new Date(dateOfBirth)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
+function defaultDependentReligiousItem(): DependentReligiousItem {
+  return { done: false }
+}
+
+function initDependentReligious(data: DependentReligious | null): DependentReligious {
+  const result: DependentReligious = {}
+  for (const { key } of DEP_RELIGIOUS_KEYS) {
+    result[key] = data?.[key] ?? defaultDependentReligiousItem()
+  }
+  return result
+}
+
 // --- Default JSON values ---
 
 function defaultApplianceCondition(): ApplianceCondition {
@@ -259,9 +295,11 @@ function initReligious(data: ReligiousVisits | null): ReligiousVisits {
 
 // ===========================================================================
 
-export default function BeneficiaryDetailPage() {
+export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?: boolean } = {}) {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const isViewMode = viewOnly || location.pathname.endsWith("/view")
   const auth = useAuth()
   const [beneficiary, setBeneficiary] = React.useState<Beneficiary | null>(null)
   const [categories, setCategories] = React.useState<Category[]>([])
@@ -275,8 +313,17 @@ export default function BeneficiaryDetailPage() {
   const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false)
   const [historyDialogOpen, setHistoryDialogOpen] = React.useState(false)
 
-  const canEdit = auth.hasPermission("edit_profile")
-  const canAssignCategory = auth.hasPermission("assign_category")
+  const [progress, setProgress] = React.useState<ProgressResponse | null>(null)
+  const [submittingReview, setSubmittingReview] = React.useState(false)
+  const [missingFields, setMissingFields] = React.useState<SubmitReviewErrorDetails | null>(null)
+
+  // Documents
+  const [documentTypes, setDocumentTypes] = React.useState<DocumentType[]>([])
+  const [uploadOpen, setUploadOpen] = React.useState(false)
+  const [previewDoc, setPreviewDoc] = React.useState<{ name: string; url: string } | null>(null)
+
+  const canEdit = !isViewMode && auth.hasPermission("edit_profile")
+  const canAssignCategory = !isViewMode && auth.hasPermission("assign_category")
 
   // --- Form state ---
   const [form, setForm] = React.useState({
@@ -327,6 +374,15 @@ export default function BeneficiaryDetailPage() {
       setBeneficiary(bRes.beneficiary)
       setCategories(cRes.categories)
       const b = bRes.beneficiary
+
+      // Load progress and document types in parallel
+      const [progressRes, docTypesRes] = await Promise.all([
+        beneficiariesApi.getProgress(Number(id)).catch(() => null),
+        beneficiariesApi.getDocumentTypes(Number(id)).catch(() => null),
+      ])
+      if (progressRes) setProgress(progressRes)
+      if (docTypesRes) setDocumentTypes(docTypesRes.types)
+
       setForm({
         name: b.name || "",
         nationalId: b.nationalId,
@@ -382,41 +438,42 @@ export default function BeneficiaryDetailPage() {
     if (!beneficiary) return
     setSaving(true)
     try {
-      const numOrUndef = (v: string) => (v !== "" ? Number(v) : undefined)
+      const numOrNull = (v: string) => (v !== "" ? Number(v) : null)
+      const strOrNull = (v: string) => (v !== "" ? v : null)
       await beneficiariesApi.updateBeneficiary(beneficiary.id, {
-        name: form.name || undefined,
+        name: strOrNull(form.name),
         nationalId: form.nationalId,
-        gender: (form.gender as "male" | "female") || undefined,
-        dateOfBirth: form.dateOfBirth || undefined,
-        maritalStatus: form.maritalStatus || undefined,
-        phone: form.phone || undefined,
-        otherPhone: form.otherPhone || undefined,
-        familyCount: numOrUndef(form.familyCount),
-        iban: form.iban || undefined,
-        bank: form.bank || undefined,
-        residenceArea: form.residenceArea || undefined,
-        residenceAreaOther: form.residenceAreaOther || undefined,
-        buildingOwnership: form.buildingOwnership || undefined,
-        buildingType: form.buildingType || undefined,
-        buildingTypeOther: form.buildingTypeOther || undefined,
-        buildingCondition: form.buildingCondition || undefined,
-        buildingCapacity: form.buildingCapacity || undefined,
+        gender: (form.gender as "male" | "female") || null,
+        dateOfBirth: strOrNull(form.dateOfBirth),
+        maritalStatus: strOrNull(form.maritalStatus),
+        phone: strOrNull(form.phone),
+        otherPhone: strOrNull(form.otherPhone),
+        familyCount: numOrNull(form.familyCount),
+        iban: strOrNull(form.iban),
+        bank: strOrNull(form.bank),
+        residenceArea: strOrNull(form.residenceArea),
+        residenceAreaOther: strOrNull(form.residenceAreaOther),
+        buildingOwnership: strOrNull(form.buildingOwnership),
+        buildingType: strOrNull(form.buildingType),
+        buildingTypeOther: strOrNull(form.buildingTypeOther),
+        buildingCondition: strOrNull(form.buildingCondition),
+        buildingCapacity: strOrNull(form.buildingCapacity),
         husbandReligious: husbandReligious,
         wifeReligious: wifeReligious,
         furnitureAppliances: furniture,
         incomeSources: income,
         financialObligations: obligations,
-        attributes: form.attributes || undefined,
-        enrollment: form.enrollment || undefined,
-        visitDate: form.visitDate || undefined,
-        updateDone: form.updateDone || undefined,
-        nextUpdate: form.nextUpdate || undefined,
-        specialDate: form.specialDate || undefined,
-        healthStatus: form.healthStatus || undefined,
-        origin: form.origin || undefined,
-        familySkillsTalents: form.familySkillsTalents || undefined,
-        researcherNotes: form.researcherNotes || undefined,
-        notes: form.notes || undefined,
+        attributes: strOrNull(form.attributes),
+        enrollment: strOrNull(form.enrollment),
+        visitDate: strOrNull(form.visitDate),
+        updateDone: strOrNull(form.updateDone),
+        nextUpdate: strOrNull(form.nextUpdate),
+        specialDate: strOrNull(form.specialDate),
+        healthStatus: strOrNull(form.healthStatus),
+        origin: strOrNull(form.origin),
+        familySkillsTalents: strOrNull(form.familySkillsTalents),
+        researcherNotes: strOrNull(form.researcherNotes),
+        notes: strOrNull(form.notes),
       })
       toast.success("تم حفظ البيانات بنجاح")
       loadData()
@@ -436,6 +493,26 @@ export default function BeneficiaryDetailPage() {
       loadData()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "حدث خطأ غير متوقع")
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!beneficiary) return
+    setSubmittingReview(true)
+    setMissingFields(null)
+    try {
+      await beneficiariesApi.submitReview(beneficiary.id)
+      toast.success("تم تقديم الملف للمراجعة")
+      loadData()
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400 && err.details) {
+        setMissingFields(err.details as unknown as SubmitReviewErrorDetails)
+        toast.error("الحقول المطلوبة غير مكتملة")
+      } else {
+        toast.error(err instanceof ApiError ? err.message : "حدث خطأ غير متوقع")
+      }
+    } finally {
+      setSubmittingReview(false)
     }
   }
 
@@ -484,7 +561,7 @@ export default function BeneficiaryDetailPage() {
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => navigate("/beneficiaries")}
+            onClick={() => navigate(isViewMode ? -1 : "/beneficiaries")}
           >
             <ArrowRight className="size-4" />
           </Button>
@@ -496,6 +573,9 @@ export default function BeneficiaryDetailPage() {
               {beneficiary.beneficiaryNumber}
             </p>
           </div>
+          {isViewMode && (
+            <Badge variant="secondary">عرض فقط</Badge>
+          )}
           {beneficiary.category && (
             <Badge
               variant="outline"
@@ -507,8 +587,31 @@ export default function BeneficiaryDetailPage() {
               {beneficiary.category.name}
             </Badge>
           )}
+          <Badge className={STATUS_COLORS[beneficiary.status]}>
+            {STATUS_LABELS[beneficiary.status]}
+          </Badge>
+          {beneficiary.age != null && (
+            <span className="text-sm text-muted-foreground">
+              العمر: {beneficiary.age} سنة
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
+          {canEdit && (beneficiary.status === "draft" || beneficiary.status === "returned") && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSubmitReview}
+              disabled={submittingReview}
+            >
+              {submittingReview ? (
+                <LoaderCircle className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+              تقديم للمراجعة
+            </Button>
+          )}
           {canAssignCategory && (
             <Button
               variant="outline"
@@ -540,6 +643,71 @@ export default function BeneficiaryDetailPage() {
         </div>
       </div>
 
+      {/* Progress Bar */}
+      {progress && (
+        <div className="mb-4 rounded-lg border p-3">
+          <div className="mb-1 flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">اكتمال الملف</span>
+            <span className="font-medium">{progress.progress}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${progress.progress}%` }}
+            />
+          </div>
+          {progress.pendingFields.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {progress.pendingFields.map((f) => (
+                <Badge key={f.fieldName} variant="outline" className="text-xs text-destructive border-destructive/30">
+                  {f.fieldLabel}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Return Note */}
+      {beneficiary.status === "returned" && beneficiary.returnNote && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+          <AlertTriangle className="size-5 shrink-0 text-destructive" />
+          <div>
+            <p className="text-sm font-medium text-destructive">ملاحظة الإرجاع</p>
+            <p className="mt-1 text-sm">{beneficiary.returnNote}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Missing Fields from submit review */}
+      {missingFields && (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-950">
+          <p className="mb-2 text-sm font-medium text-yellow-700 dark:text-yellow-300">
+            الحقول المطلوبة غير مكتملة:
+          </p>
+          {missingFields.beneficiaryMissing?.length > 0 && (
+            <div className="mb-1">
+              <span className="text-xs font-medium">المستفيد: </span>
+              {missingFields.beneficiaryMissing.map((f) => (
+                <Badge key={f.fieldName} variant="outline" className="me-1 text-xs">
+                  {f.fieldLabel}
+                </Badge>
+              ))}
+            </div>
+          )}
+          {missingFields.dependentMissing?.length > 0 && (
+            <div>
+              <span className="text-xs font-medium">التابعين: </span>
+              {missingFields.dependentMissing.map((f, i) => (
+                <Badge key={i} variant="outline" className="me-1 text-xs">
+                  {f.dependentName}: {f.fieldLabel}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* === Section 1: Basic Information === */}
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
@@ -550,7 +718,7 @@ export default function BeneficiaryDetailPage() {
             <Input value={form.name} onChange={(e) => updateField("name", e.target.value)} disabled={!canEdit} />
           </Field>
           <Field label="رقم الهوية">
-            <Input dir="ltr" className="text-start" value={form.nationalId} onChange={(e) => updateField("nationalId", e.target.value)} disabled={!canEdit} />
+            <Input dir="ltr" className="text-start" value={form.nationalId} onChange={(e) => updateField("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} maxLength={10} disabled={!canEdit} />
           </Field>
           <Field label="الجنس">
             <Select value={form.gender} onValueChange={(v) => updateField("gender", v)} disabled={!canEdit}>
@@ -563,6 +731,11 @@ export default function BeneficiaryDetailPage() {
           </Field>
           <Field label="تاريخ الميلاد">
             <Input type="date" value={form.dateOfBirth} onChange={(e) => updateField("dateOfBirth", e.target.value)} disabled={!canEdit} />
+            {(beneficiary.age != null || calculateAge(form.dateOfBirth) != null) && (
+              <span className="text-xs text-muted-foreground">
+                العمر: {beneficiary.age ?? calculateAge(form.dateOfBirth)} سنة
+              </span>
+            )}
           </Field>
           <Field label="الحالة الاجتماعية">
             <Select value={form.maritalStatus} onValueChange={(v) => updateField("maritalStatus", v)} disabled={!canEdit}>
@@ -994,6 +1167,7 @@ export default function BeneficiaryDetailPage() {
                   <TableHead>رقم الهوية</TableHead>
                   <TableHead>الجنس</TableHead>
                   <TableHead>تاريخ الميلاد</TableHead>
+                  <TableHead>العمر</TableHead>
                   <TableHead>صلة القرابة</TableHead>
                   <TableHead>الحالة التعليمية</TableHead>
                   {canEdit && <TableHead className="w-12" />}
@@ -1006,6 +1180,7 @@ export default function BeneficiaryDetailPage() {
                     <TableCell dir="ltr" className="text-start">{dep.nationalId || ""}</TableCell>
                     <TableCell>{dep.gender ? GENDER_LABELS[dep.gender] : ""}</TableCell>
                     <TableCell>{dep.dateOfBirth || ""}</TableCell>
+                    <TableCell>{dep.age != null ? dep.age : ""}</TableCell>
                     <TableCell>
                       {dep.relationship
                         ? dep.relationship === "other"
@@ -1047,6 +1222,96 @@ export default function BeneficiaryDetailPage() {
 
       <Separator />
 
+      {/* === Documents === */}
+      <section className="my-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground">
+            المستندات ({beneficiary.documents?.length ?? 0})
+          </h2>
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => setUploadOpen(true)}>
+              <Upload className="size-4" />
+              رفع مستند
+            </Button>
+          )}
+        </div>
+        {beneficiary.documents?.length > 0 ? (
+          <div className="overflow-x-auto rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>النوع</TableHead>
+                  <TableHead>اسم الملف</TableHead>
+                  <TableHead>ملاحظات</TableHead>
+                  <TableHead>التاريخ</TableHead>
+                  <TableHead className="w-20" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {beneficiary.documents.map((doc) => {
+                  const docType = documentTypes.find((t) => t.key === doc.type)
+                  const viewUrl = beneficiariesApi.getDocumentViewUrl(beneficiary.id, doc.id)
+                  return (
+                    <TableRow key={doc.id}>
+                      <TableCell className="font-medium">
+                        {docType?.label || doc.type || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <button
+                          type="button"
+                          className="text-primary underline text-start"
+                          onClick={() => setPreviewDoc({ name: doc.name, url: viewUrl })}
+                        >
+                          {doc.name}
+                        </button>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{doc.notes || "—"}</TableCell>
+                      <TableCell>
+                        {formatDate(doc.createdAt)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => setPreviewDoc({ name: doc.name, url: viewUrl })}
+                            title="عرض"
+                          >
+                            <Eye className="size-4" />
+                          </Button>
+                          {canEdit && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-destructive"
+                              onClick={async () => {
+                                try {
+                                  await beneficiariesApi.deleteDocument(beneficiary.id, doc.id)
+                                  toast.success("تم حذف المستند")
+                                  loadData()
+                                } catch (err) {
+                                  toast.error(err instanceof ApiError ? err.message : "حدث خطأ")
+                                }
+                              }}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">لا توجد مستندات</p>
+        )}
+      </section>
+
+      <Separator />
+
       {/* === Disbursements === */}
       {beneficiary.disbursements?.length > 0 && (
         <section className="my-6">
@@ -1062,16 +1327,29 @@ export default function BeneficiaryDetailPage() {
                   <TableHead>الموزع</TableHead>
                   <TableHead>المستلم</TableHead>
                   <TableHead>ملاحظات</TableHead>
+                  <TableHead className="w-12" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {beneficiary.disbursements.map((d: BeneficiaryDisbursement) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.program.name}</TableCell>
-                    <TableCell>{new Date(d.disbursedAt).toLocaleDateString("en")}</TableCell>
+                    <TableCell>{formatDate(d.disbursedAt)}</TableCell>
                     <TableCell>{d.disbursedBy.name}</TableCell>
                     <TableCell>{d.receiverName || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{d.notes || "—"}</TableCell>
+                    <TableCell>
+                      {d.acknowledgmentFile && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => window.open(getAcknowledgmentUrl(d.id), "_blank")}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1086,7 +1364,7 @@ export default function BeneficiaryDetailPage() {
         <span>أنشئ بواسطة: {beneficiary.createdBy.name}</span>
         <span>
           تاريخ الإنشاء:{" "}
-          {new Date(beneficiary.createdAt).toLocaleDateString("en")}
+          {formatDate(beneficiary.createdAt)}
         </span>
       </div>
 
@@ -1121,6 +1399,45 @@ export default function BeneficiaryDetailPage() {
         open={historyDialogOpen}
         onOpenChange={setHistoryDialogOpen}
       />
+
+      <UploadDocumentDialog
+        beneficiaryId={beneficiary.id}
+        documentTypes={documentTypes}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        onSuccess={loadData}
+      />
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!previewDoc} onOpenChange={(open) => !open && setPreviewDoc(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle>{previewDoc?.name}</DialogTitle>
+          </DialogHeader>
+          {previewDoc && (() => {
+            const ext = (previewDoc.name || "").split(".").pop()?.toLowerCase() ?? ""
+            const isImage = ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(ext)
+            const isPdf = ext === "pdf"
+            if (isImage) {
+              return <img src={previewDoc.url} alt={previewDoc.name} className="max-h-[70vh] w-full object-contain" />
+            }
+            if (isPdf) {
+              return <iframe src={previewDoc.url} title={previewDoc.name} className="h-[70vh] w-full border-0" />
+            }
+            return (
+              <div className="flex flex-col items-center gap-3 py-8">
+                <p className="text-sm text-muted-foreground">لا يمكن عرض هذا النوع من الملفات</p>
+                <a href={previewDoc.url} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" size="sm">
+                    <Download className="size-4" />
+                    تحميل الملف
+                  </Button>
+                </a>
+              </div>
+            )
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -1381,11 +1698,7 @@ function CategoryHistoryDialog({
                 <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
                   <span>بواسطة: {entry.assignedBy.name}</span>
                   <span>
-                    {new Date(entry.createdAt).toLocaleDateString("en", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
+                    {formatDate(entry.createdAt)}
                   </span>
                 </div>
               </div>
@@ -1427,6 +1740,7 @@ function DependentFormSection({
   const [educationStatus, setEducationStatus] = React.useState("")
   const [healthStatus, setHealthStatus] = React.useState("")
   const [notes, setNotes] = React.useState("")
+  const [religious, setReligious] = React.useState<DependentReligious>({})
   const [submitting, setSubmitting] = React.useState(false)
 
   React.useEffect(() => {
@@ -1447,6 +1761,7 @@ function DependentFormSection({
       setEducationStatus(dependent.educationStatus || "")
       setHealthStatus(dependent.healthStatus || "")
       setNotes(dependent.notes || "")
+      setReligious(initDependentReligious(dependent.religious))
     } else {
       setName("")
       setNationalId("")
@@ -1464,6 +1779,7 @@ function DependentFormSection({
       setEducationStatus("")
       setHealthStatus("")
       setNotes("")
+      setReligious(initDependentReligious(null))
     }
   }, [dependent])
 
@@ -1488,6 +1804,7 @@ function DependentFormSection({
         educationStatus:
           (educationStatus as "enrolled" | "graduated" | "dropped_out" | "not_enrolled") || undefined,
         healthStatus: healthStatus || undefined,
+        religious: religious,
         notes: notes || undefined,
       }
       if (isEdit && dependent) {
@@ -1615,6 +1932,76 @@ function DependentFormSection({
             <Textarea id="dep-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
+
+        {/* Dependent Religious Visits */}
+        <div className="rounded-lg border p-3">
+          <h4 className="mb-3 text-sm font-medium">الزيارات الدينية</h4>
+          <div className="space-y-3">
+            {DEP_RELIGIOUS_KEYS.map(({ key, label }) => {
+              const item = religious[key] ?? defaultDependentReligiousItem()
+              return (
+                <div key={key}>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={item.done}
+                      onCheckedChange={(checked) =>
+                        setReligious((prev) => ({
+                          ...prev,
+                          [key]: { ...prev[key], done: checked },
+                        }))
+                      }
+                    />
+                    <span className="text-sm">{label}</span>
+                  </div>
+                  {item.done && (
+                    <div className="mt-2 grid grid-cols-3 gap-2 ps-10">
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs text-muted-foreground">تاريخ الأداء</Label>
+                        <Input
+                          type="date"
+                          value={item.visitDate ?? ""}
+                          onChange={(e) =>
+                            setReligious((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], visitDate: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs text-muted-foreground">تاريخ التحديث</Label>
+                        <Input
+                          type="date"
+                          value={item.updateDate ?? ""}
+                          onChange={(e) =>
+                            setReligious((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], updateDate: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <Label className="text-xs text-muted-foreground">التحديث القادم</Label>
+                        <Input
+                          type="date"
+                          value={item.nextUpdate ?? ""}
+                          onChange={(e) =>
+                            setReligious((prev) => ({
+                              ...prev,
+                              [key]: { ...prev[key], nextUpdate: e.target.value },
+                            }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
         <div className="flex gap-2">
           <Button type="submit" disabled={submitting}>
             {submitting && <LoaderCircle className="animate-spin" />}
@@ -1626,5 +2013,113 @@ function DependentFormSection({
         </div>
       </form>
     </div>
+  )
+}
+
+// --- Upload Document Dialog ---
+
+function UploadDocumentDialog({
+  beneficiaryId,
+  documentTypes,
+  open,
+  onOpenChange,
+  onSuccess,
+}: {
+  beneficiaryId: number
+  documentTypes: DocumentType[]
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess: () => void
+}) {
+  const [file, setFile] = React.useState<File | null>(null)
+  const [docType, setDocType] = React.useState("")
+  const [notes, setNotes] = React.useState("")
+  const [submitting, setSubmitting] = React.useState(false)
+  const fileRef = React.useRef<HTMLInputElement>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setFile(null)
+      setDocType("")
+      setNotes("")
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }, [open])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!file || !docType) return
+    setSubmitting(true)
+    try {
+      await beneficiariesApi.uploadDocument(
+        beneficiaryId,
+        file,
+        docType,
+        notes || undefined
+      )
+      toast.success("تم رفع المستند بنجاح")
+      onOpenChange(false)
+      onSuccess()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : "حدث خطأ في رفع المستند")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>رفع مستند</DialogTitle>
+          <DialogDescription>
+            ارفع مستند جديد (PDF أو صور فقط، الحد الأقصى 10 ميجابايت)
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <Label>نوع المستند</Label>
+            <Select value={docType} onValueChange={setDocType}>
+              <SelectTrigger>
+                <SelectValue placeholder="اختر نوع المستند" />
+              </SelectTrigger>
+              <SelectContent>
+                {documentTypes.map((t) => (
+                  <SelectItem key={t.key} value={t.key}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label>الملف</Label>
+            <Input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.webp"
+              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="doc-notes">ملاحظات (اختياري)</Label>
+            <Input
+              id="doc-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              إلغاء
+            </Button>
+            <Button type="submit" disabled={submitting || !file || !docType}>
+              {submitting && <LoaderCircle className="animate-spin" />}
+              رفع
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

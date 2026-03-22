@@ -7,6 +7,7 @@ import type {
   ActiveProgram,
 } from "@/types/disbursements"
 import { ApiError } from "@/lib/api-client"
+import { formatDateTime } from "@/lib/date-utils"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -105,16 +106,6 @@ export default function DisbursementsPage() {
     setPage(1)
   }, [search, programFilter])
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
   if (!canView) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -211,7 +202,7 @@ export default function DisbursementsPage() {
                     <Badge variant="secondary">{d.program.name}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {formatDate(d.disbursedAt)}
+                    {formatDateTime(d.disbursedAt)}
                   </TableCell>
                   <TableCell className="text-sm">
                     {d.disbursedBy.name}
@@ -233,19 +224,17 @@ export default function DisbursementsPage() {
                           <Eye className="size-4" />
                           عرض التفاصيل
                         </DropdownMenuItem>
-                        {d.acknowledgmentFile && (
-                          <DropdownMenuItem
-                            onClick={() => {
-                              window.open(
-                                disbursementsApi.getAcknowledgmentUrl(d.id),
-                                "_blank"
-                              )
-                            }}
-                          >
-                            <FileDown className="size-4" />
-                            تحميل الإقرار
-                          </DropdownMenuItem>
-                        )}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            window.open(
+                              disbursementsApi.getAcknowledgmentUrl(d.id),
+                              "_blank"
+                            )
+                          }}
+                        >
+                          <FileDown className="size-4" />
+                          تحميل الإقرار
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -308,16 +297,6 @@ function DisbursementDetailDialog({
 }) {
   if (!disbursement) return null
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    })
-  }
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -358,7 +337,7 @@ function DisbursementDetailDialog({
               <div className="text-muted-foreground">البرنامج</div>
               <div>{disbursement.program.name}</div>
               <div className="text-muted-foreground">تاريخ الصرف</div>
-              <div>{formatDate(disbursement.disbursedAt)}</div>
+              <div>{formatDateTime(disbursement.disbursedAt)}</div>
               <div className="text-muted-foreground">الموظف</div>
               <div>{disbursement.disbursedBy.name}</div>
               {disbursement.receiverName && (
@@ -376,21 +355,19 @@ function DisbursementDetailDialog({
             </div>
           </div>
 
-          {disbursement.acknowledgmentFile && (
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                window.open(
-                  disbursementsApi.getAcknowledgmentUrl(disbursement.id),
-                  "_blank"
-                )
-              }}
-            >
-              <FileDown className="size-4" />
-              <span className="mr-2">تحميل إقرار الاستلام</span>
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              window.open(
+                disbursementsApi.getAcknowledgmentUrl(disbursement.id),
+                "_blank"
+              )
+            }}
+          >
+            <FileDown className="size-4" />
+            <span className="mr-2">تحميل إقرار الاستلام</span>
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -12,7 +12,6 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Card,
@@ -323,28 +322,20 @@ export default function DisbursementProcessPage() {
                   <p className="mt-1 text-sm text-destructive">{reason}</p>
                 </div>
                 <div className="w-full rounded-lg border p-4 text-start">
-                  <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                     <div className="text-muted-foreground">الاسم</div>
                     <div>{beneficiary.name ?? "—"}</div>
                     <div className="text-muted-foreground">رقم المستفيد</div>
                     <div>{beneficiary.beneficiaryNumber}</div>
                     <div className="text-muted-foreground">رقم الهوية</div>
-                    <div dir="ltr" className="text-start">
+                    <div className="text-start">
                       {beneficiary.nationalId}
                     </div>
                     {beneficiary.category && (
                       <>
                         <div className="text-muted-foreground">التصنيف</div>
-                        <div>
-                          <Badge
-                            variant="outline"
-                            style={{
-                              borderColor: beneficiary.category.color,
-                              color: beneficiary.category.color,
-                            }}
-                          >
-                            {beneficiary.category.name}
-                          </Badge>
+                        <div className="font-medium" style={{ color: beneficiary.category.color }}>
+                          {beneficiary.category.name}
                         </div>
                       </>
                     )}
@@ -375,8 +366,14 @@ export default function DisbursementProcessPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Beneficiary info */}
-              <div className="rounded-lg border p-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+              <div
+                className="rounded-lg border p-4"
+                style={beneficiary.category ? {
+                  borderInlineStartWidth: "4px",
+                  borderInlineStartColor: beneficiary.category.color,
+                } : undefined}
+              >
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                   <div className="text-muted-foreground">الاسم</div>
                   <div className="font-medium">
                     {beneficiary.name ?? "—"}
@@ -384,26 +381,21 @@ export default function DisbursementProcessPage() {
                   <div className="text-muted-foreground">رقم المستفيد</div>
                   <div>{beneficiary.beneficiaryNumber}</div>
                   <div className="text-muted-foreground">رقم الهوية</div>
-                  <div dir="ltr" className="text-start">
+                  <div className="text-start">
                     {beneficiary.nationalId}
                   </div>
                   <div className="text-muted-foreground">الهاتف</div>
-                  <div dir="ltr" className="text-start">
+                  <div className="text-start">
                     {beneficiary.phone ?? "—"}
                   </div>
                   {beneficiary.category && (
                     <>
                       <div className="text-muted-foreground">التصنيف</div>
-                      <div>
-                        <Badge
-                          variant="outline"
-                          style={{
-                            borderColor: beneficiary.category.color,
-                            color: beneficiary.category.color,
-                          }}
-                        >
-                          {beneficiary.category.name}
-                        </Badge>
+                      <div
+                        className="font-medium"
+                        style={{ color: beneficiary.category.color }}
+                      >
+                        {beneficiary.category.name}
                       </div>
                     </>
                   )}
@@ -492,7 +484,7 @@ export default function DisbursementProcessPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border p-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                   <div className="text-muted-foreground">الاسم</div>
                   <div className="font-medium">{beneficiary.name ?? "—"}</div>
                   <div className="text-muted-foreground">البرنامج</div>
@@ -500,16 +492,8 @@ export default function DisbursementProcessPage() {
                   {beneficiary.category && (
                     <>
                       <div className="text-muted-foreground">التصنيف</div>
-                      <div>
-                        <Badge
-                          variant="outline"
-                          style={{
-                            borderColor: beneficiary.category.color,
-                            color: beneficiary.category.color,
-                          }}
-                        >
-                          {beneficiary.category.name}
-                        </Badge>
+                      <div className="font-medium" style={{ color: beneficiary.category.color }}>
+                        {beneficiary.category.name}
                       </div>
                     </>
                   )}
@@ -547,26 +531,18 @@ export default function DisbursementProcessPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border p-4">
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                   <div className="text-muted-foreground">الاسم</div>
                   <div className="font-medium">{beneficiary.name ?? "—"}</div>
                   <div className="text-muted-foreground">رقم الهوية</div>
-                  <div dir="ltr" className="text-start">{beneficiary.nationalId}</div>
+                  <div className="text-start">{beneficiary.nationalId}</div>
                   <div className="text-muted-foreground">البرنامج</div>
                   <div className="font-medium">{program.name}</div>
                   {beneficiary.category && (
                     <>
                       <div className="text-muted-foreground">التصنيف</div>
-                      <div>
-                        <Badge
-                          variant="outline"
-                          style={{
-                            borderColor: beneficiary.category.color,
-                            color: beneficiary.category.color,
-                          }}
-                        >
-                          {beneficiary.category.name}
-                        </Badge>
+                      <div className="font-medium" style={{ color: beneficiary.category.color }}>
+                        {beneficiary.category.name}
                       </div>
                     </>
                   )}

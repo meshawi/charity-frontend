@@ -23,7 +23,7 @@ export type CategoryProgram = {
 export type CreateCategoryRequest = {
   name: string
   description?: string
-  color?: string
+  color: string
 }
 
 export type UpdateCategoryRequest = {

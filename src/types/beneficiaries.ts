@@ -9,6 +9,8 @@ export type BeneficiaryCreator = {
   name: string
 }
 
+export type BeneficiaryStatus = "draft" | "pending_review" | "returned" | "approved"
+
 export type BeneficiaryListItem = {
   id: number
   beneficiaryNumber: string
@@ -16,8 +18,10 @@ export type BeneficiaryListItem = {
   nationalId: string
   gender: "male" | "female"
   dateOfBirth: string | null
+  age: number | null
   phone: string | null
   categoryId: number | null
+  status: BeneficiaryStatus
   createdAt: string
   createdBy: BeneficiaryCreator
   category: BeneficiaryCategory | null
@@ -66,6 +70,19 @@ export type FinancialObligations = Record<string, ObligationItem>
 
 // --- Dependent ---
 
+export type DependentReligiousItem = {
+  done: boolean
+  visitDate?: string
+  updateDate?: string
+  nextUpdate?: string
+}
+
+export type DependentReligious = {
+  hajj?: DependentReligiousItem
+  umrah?: DependentReligiousItem
+  prophetMosque?: DependentReligiousItem
+}
+
 export type Dependent = {
   id: number
   beneficiaryId: number
@@ -73,6 +90,7 @@ export type Dependent = {
   nationalId: string | null
   gender: "male" | "female"
   dateOfBirth: string | null
+  age: number | null
   relationship: "son" | "daughter" | "other" | null
   relationshipOther: string | null
   dependentMaritalStatus: string | null
@@ -89,6 +107,7 @@ export type Dependent = {
     | "not_enrolled"
     | null
   healthStatus: string | null
+  religious: DependentReligious | null
   notes: string | null
   createdAt: string
   updatedAt: string
@@ -97,9 +116,16 @@ export type Dependent = {
 export type Document = {
   id: number
   beneficiaryId: number
+  type: string
   name: string
   url: string
+  notes: string | null
   createdAt: string
+}
+
+export type DocumentType = {
+  key: string
+  label: string
 }
 
 // --- Beneficiary ---
@@ -112,6 +138,7 @@ export type Beneficiary = {
   categoryId: number | null
   gender: "male" | "female"
   dateOfBirth: string | null
+  age: number | null
   maritalStatus:
     | "married"
     | "single"
@@ -148,6 +175,8 @@ export type Beneficiary = {
   familySkillsTalents: string | null
   researcherNotes: string | null
   notes: string | null
+  status: BeneficiaryStatus
+  returnNote: string | null
   createdAt: string
   updatedAt: string
   createdBy: BeneficiaryCreator
@@ -173,38 +202,38 @@ export type BeneficiaryDisbursement = {
 
 export type CreateBeneficiaryRequest = {
   nationalId: string
-  name?: string
-  gender?: "male" | "female"
-  dateOfBirth?: string
-  maritalStatus?: string
-  phone?: string
-  otherPhone?: string
-  familyCount?: number
-  iban?: string
-  bank?: string
-  residenceArea?: string
-  residenceAreaOther?: string
-  buildingOwnership?: string
-  buildingType?: string
-  buildingTypeOther?: string
-  buildingCondition?: string
-  buildingCapacity?: string
+  name?: string | null
+  gender?: "male" | "female" | null
+  dateOfBirth?: string | null
+  maritalStatus?: string | null
+  phone?: string | null
+  otherPhone?: string | null
+  familyCount?: number | null
+  iban?: string | null
+  bank?: string | null
+  residenceArea?: string | null
+  residenceAreaOther?: string | null
+  buildingOwnership?: string | null
+  buildingType?: string | null
+  buildingTypeOther?: string | null
+  buildingCondition?: string | null
+  buildingCapacity?: string | null
   husbandReligious?: ReligiousVisits
   wifeReligious?: ReligiousVisits
   furnitureAppliances?: FurnitureAppliances
   incomeSources?: IncomeSources
   financialObligations?: FinancialObligations
-  attributes?: string
-  enrollment?: string
-  visitDate?: string
-  updateDone?: string
-  nextUpdate?: string
-  specialDate?: string
-  healthStatus?: string
-  origin?: string
-  familySkillsTalents?: string
-  researcherNotes?: string
-  notes?: string
+  attributes?: string | null
+  enrollment?: string | null
+  visitDate?: string | null
+  updateDone?: string | null
+  nextUpdate?: string | null
+  specialDate?: string | null
+  healthStatus?: string | null
+  origin?: string | null
+  familySkillsTalents?: string | null
+  researcherNotes?: string | null
+  notes?: string | null
 }
 
 export type UpdateBeneficiaryRequest = Partial<CreateBeneficiaryRequest>
@@ -285,6 +314,7 @@ export type CreateDependentRequest = {
   weaknessSubjects?: string
   educationStatus?: "enrolled" | "graduated" | "dropped_out" | "not_enrolled"
   healthStatus?: string
+  religious?: DependentReligious
   notes?: string
 }
 
@@ -298,4 +328,51 @@ export type DependentsListResponse = {
 export type DependentMutationResponse = {
   success: true
   dependent: Dependent
+}
+
+// --- V4: Review Workflow ---
+
+export type SubmitReviewResponse = {
+  success: true
+  message: string
+  beneficiary: Beneficiary
+}
+
+export type SubmitReviewErrorDetails = {
+  beneficiaryMissing: { fieldName: string; fieldLabel: string }[]
+  dependentMissing: {
+    dependentId: number
+    dependentName: string
+    fieldName: string
+    fieldLabel: string
+  }[]
+}
+
+export type ReturnBeneficiaryResponse = {
+  success: true
+  message: string
+  beneficiary: Beneficiary
+}
+
+export type ReviewQueueResponse = {
+  success: true
+  beneficiaries: Beneficiary[]
+  pagination: Pagination
+}
+
+// --- V4: Progress ---
+
+export type ProgressResponse = {
+  success: true
+  progress: number
+  totalRequired: number
+  filledCount: number
+  pendingFields: { fieldName: string; fieldLabel: string }[]
+}
+
+// --- V4: Document Types ---
+
+export type DocumentTypesResponse = {
+  success: true
+  types: DocumentType[]
 }

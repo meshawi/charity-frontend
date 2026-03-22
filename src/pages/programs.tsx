@@ -1,10 +1,12 @@
 import * as React from "react"
+import { useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import * as programsApi from "@/lib/programs-api"
 import * as categoriesApi from "@/lib/categories-api"
 import type { Program } from "@/types/programs"
 import type { Category } from "@/types/categories"
 import { ApiError } from "@/lib/api-client"
+import { formatDate } from "@/lib/date-utils"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -50,10 +52,12 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Users,
 } from "lucide-react"
 
 export default function ProgramsPage() {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [programs, setPrograms] = React.useState<Program[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -63,6 +67,8 @@ export default function ProgramsPage() {
   const [deleteProgram, setDeleteProgram] = React.useState<Program | null>(null)
 
   const canManage = auth.hasPermission("manage_programs")
+  const canViewProfiles = auth.hasPermission("view_profiles")
+  const showActions = canManage || canViewProfiles
 
   const loadData = React.useCallback(async () => {
     try {
@@ -97,11 +103,6 @@ export default function ProgramsPage() {
     }
   }
 
-  function formatDate(date: string | null) {
-    if (!date) return "—"
-    return new Date(date).toLocaleDateString("en")
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -132,12 +133,16 @@ export default function ProgramsPage() {
               <TableHead className="min-w-28">تاريخ البدء</TableHead>
               <TableHead className="min-w-28">تاريخ الانتهاء</TableHead>
               <TableHead className="min-w-20">الحالة</TableHead>
-              {canManage && <TableHead className="w-12" />}
+              {showActions && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {programs.map((program) => (
-              <TableRow key={program.id}>
+              <TableRow
+                key={program.id}
+                className="cursor-pointer"
+                onClick={() => navigate(`/programs/${program.id}/recipients`)}
+              >
                 <TableCell className="font-medium">{program.name}</TableCell>
                 <TableCell className="max-w-48 truncate text-muted-foreground">
                   {program.description || "—"}
@@ -171,8 +176,8 @@ export default function ProgramsPage() {
                     {program.isActive ? "نشط" : "غير نشط"}
                   </Badge>
                 </TableCell>
-                {canManage && (
-                  <TableCell>
+                {showActions && (
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon-sm">
@@ -180,19 +185,31 @@ export default function ProgramsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => setEditProgram(program)}
-                        >
-                          <Pencil className="size-4" />
-                          تعديل
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeleteProgram(program)}
-                          className="text-destructive"
-                        >
-                          <Trash2 className="size-4" />
-                          حذف
-                        </DropdownMenuItem>
+                        {canViewProfiles && (
+                          <DropdownMenuItem
+                            onClick={() => navigate(`/programs/${program.id}/recipients`)}
+                          >
+                            <Users className="size-4" />
+                            المستلمين
+                          </DropdownMenuItem>
+                        )}
+                        {canManage && (
+                          <DropdownMenuItem
+                            onClick={() => setEditProgram(program)}
+                          >
+                            <Pencil className="size-4" />
+                            تعديل
+                          </DropdownMenuItem>
+                        )}
+                        {canManage && (
+                          <DropdownMenuItem
+                            onClick={() => setDeleteProgram(program)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="size-4" />
+                            حذف
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -202,7 +219,7 @@ export default function ProgramsPage() {
             {programs.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={canManage ? 7 : 6}
+                  colSpan={showActions ? 7 : 6}
                   className="text-center text-muted-foreground"
                 >
                   لا يوجد برامج

@@ -19,6 +19,7 @@ export type DashboardStats = {
 
 export type DailyStatPoint = {
   date: string
+  dateAr: string
   beneficiaries: number
   disbursements: number
 }
@@ -50,6 +51,7 @@ export type StatsResponse = {
 export type DailyStatsResponse = {
   success: true
   data: DailyStatPoint[]
+  defaultChart?: string
 }
 
 export type ActivityResponse = {

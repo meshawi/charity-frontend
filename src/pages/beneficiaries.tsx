@@ -5,6 +5,7 @@ import * as beneficiariesApi from "@/lib/beneficiaries-api"
 import * as reportsApi from "@/lib/reports-api"
 import type { BeneficiaryListItem, Pagination } from "@/types/beneficiaries"
 import type { FilterField, ActiveFilter } from "@/types/reports"
+import { GENDER_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -64,11 +65,6 @@ import {
   Download,
 } from "lucide-react"
 
-const GENDER_LABELS: Record<string, string> = {
-  male: "ذكر",
-  female: "أنثى",
-}
-
 export default function BeneficiariesPage() {
   const auth = useAuth()
   const navigate = useNavigate()
@@ -86,6 +82,7 @@ export default function BeneficiariesPage() {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(1)
+  const [disbursementStatus, setDisbursementStatus] = React.useState<"" | "received" | "not_received">("")
   const [exporting, setExporting] = React.useState(false)
 
   const [createOpen, setCreateOpen] = React.useState(false)
@@ -107,6 +104,7 @@ export default function BeneficiariesPage() {
       const res = await reportsApi.filterBeneficiaries({
         filters,
         search: search || undefined,
+        disbursementStatus: disbursementStatus || undefined,
         page,
         limit: 20,
       })
@@ -117,7 +115,7 @@ export default function BeneficiariesPage() {
     } finally {
       setLoading(false)
     }
-  }, [filters, search, page])
+  }, [filters, search, disbursementStatus, page])
 
   React.useEffect(() => {
     loadData()
@@ -126,7 +124,7 @@ export default function BeneficiariesPage() {
   // Reset page when filters change
   React.useEffect(() => {
     setPage(1)
-  }, [search, filters])
+  }, [search, filters, disbursementStatus])
 
   async function handleDelete() {
     if (!deleteBeneficiary) return
@@ -163,7 +161,7 @@ export default function BeneficiariesPage() {
               onClick={async () => {
                 setExporting(true)
                 try {
-                  await reportsApi.exportBeneficiaries(filters)
+                  await reportsApi.exportBeneficiaries(filters, disbursementStatus || undefined)
                   toast.success("تم تصدير التقرير بنجاح")
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "حدث خطأ في التصدير")
@@ -195,6 +193,23 @@ export default function BeneficiariesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">الاستلام:</span>
+          {([
+            { value: "" as const, label: "الكل" },
+            { value: "received" as const, label: "استلم" },
+            { value: "not_received" as const, label: "لم يستلم" },
+          ]).map((opt) => (
+            <Button
+              key={opt.value}
+              variant={disbursementStatus === opt.value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDisbursementStatus(opt.value)}
+            >
+              {opt.label}
+            </Button>
+          ))}
+        </div>
         {filterFields.length > 0 && (
           <FilterBuilder fields={filterFields} onChange={setFilters} />
         )}
@@ -208,8 +223,10 @@ export default function BeneficiariesPage() {
               <TableHead className="min-w-32">الاسم</TableHead>
               <TableHead className="min-w-24">رقم الهوية</TableHead>
               <TableHead>الجنس</TableHead>
+              <TableHead>العمر</TableHead>
               <TableHead>الهاتف</TableHead>
               <TableHead>التصنيف</TableHead>
+              <TableHead>الحالة</TableHead>
               {(canEdit || canDelete) && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
@@ -220,19 +237,22 @@ export default function BeneficiariesPage() {
                 className="cursor-pointer"
                 onClick={() => navigate(`/beneficiaries/${b.id}`)}
               >
-                <TableCell dir="ltr" className="text-start font-mono text-sm">
+                <TableCell className="font-mono text-sm">
                   {b.beneficiaryNumber}
                 </TableCell>
                 <TableCell className="font-medium">
                   {b.name || "—"}
                 </TableCell>
-                <TableCell dir="ltr" className="text-start">
+                <TableCell>
                   {b.nationalId}
                 </TableCell>
                 <TableCell>
                   {b.gender ? GENDER_LABELS[b.gender] : "—"}
                 </TableCell>
-                <TableCell dir="ltr" className="text-start">
+                <TableCell>
+                  {b.age != null ? b.age : "—"}
+                </TableCell>
+                <TableCell>
                   {b.phone || "—"}
                 </TableCell>
                 <TableCell>
@@ -245,6 +265,15 @@ export default function BeneficiariesPage() {
                       }}
                     >
                       {b.category.name}
+                    </Badge>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+                <TableCell>
+                  {b.status ? (
+                    <Badge className={STATUS_COLORS[b.status]}>
+                      {STATUS_LABELS[b.status]}
                     </Badge>
                   ) : (
                     "—"
