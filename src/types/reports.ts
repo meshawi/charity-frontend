@@ -43,6 +43,7 @@ export type FilterBeneficiariesRequest = {
   filters: ActiveFilter[]
   search?: string
   disbursementStatus?: "received" | "not_received"
+  needUpdate?: boolean
   page?: number
   limit?: number
 }
@@ -50,6 +51,7 @@ export type FilterBeneficiariesRequest = {
 export type ExportBeneficiariesRequest = {
   filters: ActiveFilter[]
   disbursementStatus?: "received" | "not_received"
+  needUpdate?: boolean
 }
 
 export type ExportProgramsRequest = {

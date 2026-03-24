@@ -334,8 +334,8 @@ export default function DisbursementProcessPage() {
                     {beneficiary.category && (
                       <>
                         <div className="text-muted-foreground">التصنيف</div>
-                        <div className="font-medium" style={{ color: beneficiary.category.color }}>
-                          {beneficiary.category.name}
+                        <div>
+                          <span className="inline-block size-3 rounded-full" style={{ backgroundColor: beneficiary.category.color }} />
                         </div>
                       </>
                     )}
@@ -388,17 +388,7 @@ export default function DisbursementProcessPage() {
                   <div className="text-start">
                     {beneficiary.phone ?? "—"}
                   </div>
-                  {beneficiary.category && (
-                    <>
-                      <div className="text-muted-foreground">التصنيف</div>
-                      <div
-                        className="font-medium"
-                        style={{ color: beneficiary.category.color }}
-                      >
-                        {beneficiary.category.name}
-                      </div>
-                    </>
-                  )}
+
                   {beneficiary.dependents &&
                     beneficiary.dependents.length > 0 && (
                       <>
@@ -492,8 +482,8 @@ export default function DisbursementProcessPage() {
                   {beneficiary.category && (
                     <>
                       <div className="text-muted-foreground">التصنيف</div>
-                      <div className="font-medium" style={{ color: beneficiary.category.color }}>
-                        {beneficiary.category.name}
+                      <div>
+                        <span className="inline-block size-3 rounded-full" style={{ backgroundColor: beneficiary.category.color }} />
                       </div>
                     </>
                   )}
@@ -541,8 +531,8 @@ export default function DisbursementProcessPage() {
                   {beneficiary.category && (
                     <>
                       <div className="text-muted-foreground">التصنيف</div>
-                      <div className="font-medium" style={{ color: beneficiary.category.color }}>
-                        {beneficiary.category.name}
+                      <div>
+                        <span className="inline-block size-3 rounded-full" style={{ backgroundColor: beneficiary.category.color }} />
                       </div>
                     </>
                   )}

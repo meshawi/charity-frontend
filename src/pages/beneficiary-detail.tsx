@@ -132,9 +132,11 @@ const RESIDENCE_AREA_LABELS: Record<string, string> = {
 }
 
 const BUILDING_OWNERSHIP_LABELS: Record<string, string> = {
-  private: "ملك خاص / إسكان",
-  shared: "ملك مشترك",
+  private: "ملك خاص",
+  shared: "مشترك",
   rented: "مستأجر",
+  charity_house: "منزل خيري",
+  developmental_housing: "اسكان تنموي",
 }
 
 const BUILDING_TYPE_LABELS: Record<string, string> = {
@@ -254,11 +256,11 @@ function defaultReligiousItem(): ReligiousItem {
 }
 
 function defaultIncomeItem(): IncomeItem {
-  return { monthly: 0, yearly: 0, notes: "" }
+  return { monthly: 0, notes: "" }
 }
 
 function defaultObligationItem(): ObligationItem {
-  return { monthly: 0, yearly: 0, notes: "" }
+  return { monthly: 0, notes: "" }
 }
 
 function initFurniture(data: FurnitureAppliances | null): FurnitureAppliances {
@@ -521,19 +523,11 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     (sum, { key }) => sum + (income[key]?.monthly ?? 0),
     0
   )
-  const totalYearlyIncome = INCOME_KEYS.reduce(
-    (sum, { key }) => sum + (income[key]?.yearly ?? 0),
-    0
-  )
   const familyCountNum = form.familyCount ? Number(form.familyCount) : 0
   const perCapita = familyCountNum > 0 ? Math.round(totalMonthlyIncome / familyCountNum) : 0
 
   const totalMonthlyObligations = OBLIGATION_KEYS.reduce(
     (sum, { key }) => sum + (obligations[key]?.monthly ?? 0),
-    0
-  )
-  const totalYearlyObligations = OBLIGATION_KEYS.reduce(
-    (sum, { key }) => sum + (obligations[key]?.yearly ?? 0),
     0
   )
 
@@ -864,7 +858,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               <TableRow>
                 <TableHead className="min-w-32">المصدر</TableHead>
                 <TableHead className="min-w-24">شهري</TableHead>
-                <TableHead className="min-w-24">سنوي</TableHead>
                 <TableHead className="min-w-32">ملاحظات</TableHead>
               </TableRow>
             </TableHeader>
@@ -888,20 +881,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
                   </TableCell>
                   <TableCell>
                     <Input
-                      type="number"
-                      className="w-24"
-                      value={income[key]?.yearly ?? 0}
-                      onChange={(e) =>
-                        setIncome((prev) => ({
-                          ...prev,
-                          [key]: { ...prev[key], yearly: Number(e.target.value) || 0 },
-                        }))
-                      }
-                      disabled={!canEdit}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
                       className="w-32"
                       value={income[key]?.notes ?? ""}
                       onChange={(e) =>
@@ -918,7 +897,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell>المجموع</TableCell>
                 <TableCell>{totalMonthlyIncome.toLocaleString("en")}</TableCell>
-                <TableCell>{totalYearlyIncome.toLocaleString("en")}</TableCell>
                 <TableCell className="text-xs">
                   نصيب الفرد: {perCapita.toLocaleString("en")}
                 </TableCell>
@@ -939,7 +917,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               <TableRow>
                 <TableHead className="min-w-32">الالتزام</TableHead>
                 <TableHead className="min-w-24">شهري</TableHead>
-                <TableHead className="min-w-24">سنوي</TableHead>
                 <TableHead className="min-w-32">ملاحظات</TableHead>
               </TableRow>
             </TableHeader>
@@ -963,20 +940,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
                   </TableCell>
                   <TableCell>
                     <Input
-                      type="number"
-                      className="w-24"
-                      value={obligations[key]?.yearly ?? 0}
-                      onChange={(e) =>
-                        setObligations((prev) => ({
-                          ...prev,
-                          [key]: { ...prev[key], yearly: Number(e.target.value) || 0 },
-                        }))
-                      }
-                      disabled={!canEdit}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Input
                       className="w-32"
                       value={obligations[key]?.notes ?? ""}
                       onChange={(e) =>
@@ -993,7 +956,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell>المجموع</TableCell>
                 <TableCell>{totalMonthlyObligations.toLocaleString("en")}</TableCell>
-                <TableCell>{totalYearlyObligations.toLocaleString("en")}</TableCell>
                 <TableCell />
               </TableRow>
             </TableBody>

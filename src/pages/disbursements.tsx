@@ -322,9 +322,7 @@ function DisbursementDetailDialog({
                 <>
                   <div className="text-muted-foreground">التصنيف</div>
                   <div>
-                    <Badge variant="secondary">
-                      {disbursement.beneficiary.category.name}
-                    </Badge>
+                    <span className="inline-block size-3 rounded-full" style={{ backgroundColor: disbursement.beneficiary.category.color }} />
                   </div>
                 </>
               )}

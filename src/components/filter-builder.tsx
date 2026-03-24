@@ -55,12 +55,49 @@ let nextId = 1
 export function FilterBuilder({
   fields,
   onChange,
+  storageKey,
 }: {
   fields: FilterField[]
   onChange: (filters: ActiveFilter[]) => void
+  storageKey?: string
 }) {
-  const [rows, setRows] = React.useState<FilterRow[]>([])
-  const [open, setOpen] = React.useState(false)
+  const [rows, setRows] = React.useState<FilterRow[]>(() => {
+    if (storageKey) {
+      try {
+        const raw = sessionStorage.getItem(storageKey)
+        if (raw) {
+          const parsed = JSON.parse(raw) as FilterRow[]
+          for (const r of parsed) {
+            if (r.id >= nextId) nextId = r.id + 1
+          }
+          return parsed
+        }
+      } catch { /* ignore */ }
+    }
+    return []
+  })
+  const [open, setOpen] = React.useState(() => {
+    if (storageKey) {
+      try {
+        const raw = sessionStorage.getItem(storageKey)
+        if (raw) {
+          const parsed = JSON.parse(raw) as FilterRow[]
+          return parsed.length > 0
+        }
+      } catch { /* ignore */ }
+    }
+    return false
+  })
+
+  // Persist rows to sessionStorage
+  React.useEffect(() => {
+    if (!storageKey) return
+    if (rows.length > 0) {
+      sessionStorage.setItem(storageKey, JSON.stringify(rows))
+    } else {
+      sessionStorage.removeItem(storageKey)
+    }
+  }, [rows, storageKey])
   const [presets, setPresets] = React.useState<FilterPreset[]>(loadPresets)
 
   const fieldsByKey = React.useMemo(() => {

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 import { FilterBuilder } from "@/components/filter-builder"
 import {
   Table,
@@ -80,10 +81,31 @@ export default function BeneficiariesPage() {
     totalPages: 0,
   })
   const [loading, setLoading] = React.useState(true)
-  const [search, setSearch] = React.useState("")
-  const [page, setPage] = React.useState(1)
-  const [disbursementStatus, setDisbursementStatus] = React.useState<"" | "received" | "not_received">("")
+  const [search, setSearch] = React.useState(() => sessionStorage.getItem("ben-search") ?? "")
+  const [page, setPage] = React.useState(() => {
+    const stored = sessionStorage.getItem("ben-page")
+    return stored ? Number(stored) : 1
+  })
+  const [disbursementStatus, setDisbursementStatus] = React.useState<"" | "received" | "not_received">(() => {
+    const stored = sessionStorage.getItem("ben-disbursement-status")
+    return (stored as "" | "received" | "not_received") || ""
+  })
   const [exporting, setExporting] = React.useState(false)
+  const [needUpdate, setNeedUpdate] = React.useState(() => sessionStorage.getItem("ben-need-update") === "true")
+
+  // Persist basic filters to sessionStorage
+  React.useEffect(() => {
+    sessionStorage.setItem("ben-search", search)
+  }, [search])
+  React.useEffect(() => {
+    sessionStorage.setItem("ben-page", String(page))
+  }, [page])
+  React.useEffect(() => {
+    sessionStorage.setItem("ben-disbursement-status", disbursementStatus)
+  }, [disbursementStatus])
+  React.useEffect(() => {
+    sessionStorage.setItem("ben-need-update", String(needUpdate))
+  }, [needUpdate])
 
   const [createOpen, setCreateOpen] = React.useState(false)
   const [deleteBeneficiary, setDeleteBeneficiary] =
@@ -105,6 +127,7 @@ export default function BeneficiariesPage() {
         filters,
         search: search || undefined,
         disbursementStatus: disbursementStatus || undefined,
+        needUpdate: needUpdate || undefined,
         page,
         limit: 20,
       })
@@ -115,7 +138,7 @@ export default function BeneficiariesPage() {
     } finally {
       setLoading(false)
     }
-  }, [filters, search, disbursementStatus, page])
+  }, [filters, search, disbursementStatus, needUpdate, page])
 
   React.useEffect(() => {
     loadData()
@@ -124,7 +147,7 @@ export default function BeneficiariesPage() {
   // Reset page when filters change
   React.useEffect(() => {
     setPage(1)
-  }, [search, filters, disbursementStatus])
+  }, [search, filters, disbursementStatus, needUpdate])
 
   async function handleDelete() {
     if (!deleteBeneficiary) return
@@ -161,7 +184,7 @@ export default function BeneficiariesPage() {
               onClick={async () => {
                 setExporting(true)
                 try {
-                  await reportsApi.exportBeneficiaries(filters, disbursementStatus || undefined)
+                  await reportsApi.exportBeneficiaries(filters, disbursementStatus || undefined, needUpdate || undefined)
                   toast.success("تم تصدير التقرير بنجاح")
                 } catch (err) {
                   toast.error(err instanceof Error ? err.message : "حدث خطأ في التصدير")
@@ -193,7 +216,7 @@ export default function BeneficiariesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm text-muted-foreground">الاستلام:</span>
           {([
             { value: "" as const, label: "الكل" },
@@ -209,9 +232,17 @@ export default function BeneficiariesPage() {
               {opt.label}
             </Button>
           ))}
+          <Separator orientation="vertical" className="mx-1 h-6" />
+          <Button
+            variant={needUpdate ? "default" : "outline"}
+            size="sm"
+            onClick={() => setNeedUpdate((v) => !v)}
+          >
+            بحاجة تحديث
+          </Button>
         </div>
         {filterFields.length > 0 && (
-          <FilterBuilder fields={filterFields} onChange={setFilters} />
+          <FilterBuilder fields={filterFields} onChange={setFilters} storageKey="ben-adv-filters" />
         )}
       </div>
 

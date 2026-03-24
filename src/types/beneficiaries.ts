@@ -54,7 +54,6 @@ export type FurnitureAppliances = Record<string, ApplianceCondition>
 
 export type IncomeItem = {
   monthly: number
-  yearly: number
   notes: string
 }
 
@@ -62,7 +61,6 @@ export type IncomeSources = Record<string, IncomeItem>
 
 export type ObligationItem = {
   monthly: number
-  yearly: number
   notes: string
 }
 

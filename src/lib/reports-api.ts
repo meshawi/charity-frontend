@@ -45,9 +45,10 @@ async function downloadCSV(endpoint: string, body: unknown, filename: string) {
 export async function exportBeneficiaries(
   filters: ActiveFilter[],
   disbursementStatus?: "received" | "not_received",
+  needUpdate?: boolean,
   filename = "تقرير_المستفيدين.xlsx"
 ) {
-  const data: ExportBeneficiariesRequest = { filters, disbursementStatus }
+  const data: ExportBeneficiariesRequest = { filters, disbursementStatus, needUpdate }
   return downloadCSV("/reports/beneficiaries/export", data, filename)
 }
 
