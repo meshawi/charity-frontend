@@ -116,6 +116,7 @@ const SCHOOL_TYPE_LABELS: Record<string, string> = {
 const RELATIONSHIP_LABELS: Record<string, string> = {
   son: "ابن",
   daughter: "ابنة",
+  wife: "زوجة",
   other: "أخرى",
 }
 
@@ -336,6 +337,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     maritalStatus: "",
     phone: "",
     otherPhone: "",
+    otherPhoneRelationship: "",
     familyCount: "",
     dependentsCount: "",
     iban: "",
@@ -347,21 +349,17 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     buildingTypeOther: "",
     buildingCondition: "",
     buildingCapacity: "",
-    attributes: "",
-    enrollment: "",
-    visitDate: "",
-    updateDone: "",
+    researcherName: "",
+    firstVisitDate: "",
+    updateDate: "",
     nextUpdate: "",
-    specialDate: "",
     healthStatus: "",
     origin: "",
     familySkillsTalents: "",
     researcherNotes: "",
-    notes: "",
   })
 
   const [husbandReligious, setHusbandReligious] = React.useState<ReligiousVisits>({})
-  const [wifeReligious, setWifeReligious] = React.useState<ReligiousVisits>({})
   const [furniture, setFurniture] = React.useState<FurnitureAppliances>({})
   const [income, setIncome] = React.useState<IncomeSources>({})
   const [obligations, setObligations] = React.useState<FinancialObligations>({})
@@ -393,6 +391,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         maritalStatus: b.maritalStatus || "",
         phone: b.phone || "",
         otherPhone: b.otherPhone || "",
+        otherPhoneRelationship: b.otherPhoneRelationship || "",
         familyCount: b.familyCount != null ? String(b.familyCount) : "",
         dependentsCount: b.dependentsCount != null ? String(b.dependentsCount) : "",
         iban: b.iban || "",
@@ -404,20 +403,16 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         buildingTypeOther: b.buildingTypeOther || "",
         buildingCondition: b.buildingCondition || "",
         buildingCapacity: b.buildingCapacity || "",
-        attributes: b.attributes || "",
-        enrollment: b.enrollment || "",
-        visitDate: b.visitDate ? b.visitDate.split("T")[0] : "",
-        updateDone: b.updateDone ? b.updateDone.split("T")[0] : "",
+        researcherName: b.researcherName || "",
+        firstVisitDate: b.firstVisitDate ? b.firstVisitDate.split("T")[0] : "",
+        updateDate: b.updateDate ? b.updateDate.split("T")[0] : "",
         nextUpdate: b.nextUpdate ? b.nextUpdate.split("T")[0] : "",
-        specialDate: b.specialDate ? b.specialDate.split("T")[0] : "",
         healthStatus: b.healthStatus || "",
         origin: b.origin || "",
         familySkillsTalents: b.familySkillsTalents || "",
         researcherNotes: b.researcherNotes || "",
-        notes: b.notes || "",
       })
       setHusbandReligious(initReligious(b.husbandReligious))
-      setWifeReligious(initReligious(b.wifeReligious))
       setFurniture(initFurniture(b.furnitureAppliances))
       setIncome(initIncome(b.incomeSources))
       setObligations(initObligations(b.financialObligations))
@@ -450,6 +445,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         maritalStatus: strOrNull(form.maritalStatus),
         phone: strOrNull(form.phone),
         otherPhone: strOrNull(form.otherPhone),
+        otherPhoneRelationship: strOrNull(form.otherPhoneRelationship),
         familyCount: numOrNull(form.familyCount),
         iban: strOrNull(form.iban),
         bank: strOrNull(form.bank),
@@ -461,21 +457,17 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         buildingCondition: strOrNull(form.buildingCondition),
         buildingCapacity: strOrNull(form.buildingCapacity),
         husbandReligious: husbandReligious,
-        wifeReligious: wifeReligious,
         furnitureAppliances: furniture,
         incomeSources: income,
         financialObligations: obligations,
-        attributes: strOrNull(form.attributes),
-        enrollment: strOrNull(form.enrollment),
-        visitDate: strOrNull(form.visitDate),
-        updateDone: strOrNull(form.updateDone),
+        researcherName: strOrNull(form.researcherName),
+        firstVisitDate: strOrNull(form.firstVisitDate),
+        updateDate: strOrNull(form.updateDate),
         nextUpdate: strOrNull(form.nextUpdate),
-        specialDate: strOrNull(form.specialDate),
         healthStatus: strOrNull(form.healthStatus),
         origin: strOrNull(form.origin),
         familySkillsTalents: strOrNull(form.familySkillsTalents),
         researcherNotes: strOrNull(form.researcherNotes),
-        notes: strOrNull(form.notes),
       })
       toast.success("تم حفظ البيانات بنجاح")
       loadData()
@@ -747,6 +739,9 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           <Field label="هاتف آخر">
             <Input dir="ltr" className="text-start" value={form.otherPhone} onChange={(e) => updateField("otherPhone", e.target.value)} disabled={!canEdit} />
           </Field>
+          <Field label="صلة صاحب الجوال الآخر">
+            <Input value={form.otherPhoneRelationship} onChange={(e) => updateField("otherPhoneRelationship", e.target.value)} disabled={!canEdit} />
+          </Field>
           <Field label="عدد أفراد الأسرة">
             <Input type="number" value={form.familyCount} onChange={(e) => updateField("familyCount", e.target.value)} disabled={!canEdit} />
           </Field>
@@ -970,20 +965,11 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
           الزيارات الدينية
         </h2>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <ReligiousSection
-            title="الزوج"
-            data={husbandReligious}
-            onChange={setHusbandReligious}
-            disabled={!canEdit}
-          />
-          <ReligiousSection
-            title="الزوجة"
-            data={wifeReligious}
-            onChange={setWifeReligious}
-            disabled={!canEdit}
-          />
-        </div>
+        <ReligiousSection
+          data={husbandReligious}
+          onChange={setHusbandReligious}
+          disabled={!canEdit}
+        />
       </section>
 
       <Separator />
@@ -1058,25 +1044,19 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           معلومات إضافية
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Field label="التسجيل">
-            <Input value={form.enrollment} onChange={(e) => updateField("enrollment", e.target.value)} disabled={!canEdit} />
-          </Field>
-          <Field label="الصفات">
-            <Input value={form.attributes} onChange={(e) => updateField("attributes", e.target.value)} disabled={!canEdit} />
+          <Field label="اسم الباحث">
+            <Input value={form.researcherName} onChange={(e) => updateField("researcherName", e.target.value)} disabled={!canEdit} />
           </Field>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Field label="تاريخ الزيارة">
-            <Input type="date" value={form.visitDate} onChange={(e) => updateField("visitDate", e.target.value)} disabled={!canEdit} />
+          <Field label="تاريخ الزيارة الأولى">
+            <Input type="date" value={form.firstVisitDate} onChange={(e) => updateField("firstVisitDate", e.target.value)} disabled={!canEdit} />
           </Field>
-          <Field label="هل تم التحديث">
-            <Input type="date" value={form.updateDone} onChange={(e) => updateField("updateDone", e.target.value)} disabled={!canEdit} />
+          <Field label="تاريخ التحديث">
+            <Input type="date" value={form.updateDate} onChange={(e) => updateField("updateDate", e.target.value)} disabled={!canEdit} />
           </Field>
           <Field label="التحديث القادم">
             <Input type="date" value={form.nextUpdate} onChange={(e) => updateField("nextUpdate", e.target.value)} disabled={!canEdit} />
-          </Field>
-          <Field label="تاريخ مميز">
-            <Input type="date" value={form.specialDate} onChange={(e) => updateField("specialDate", e.target.value)} disabled={!canEdit} />
           </Field>
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1088,9 +1068,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           </Field>
           <Field label="ملاحظات وتوصيات الباحث">
             <Textarea value={form.researcherNotes} onChange={(e) => updateField("researcherNotes", e.target.value)} disabled={!canEdit} />
-          </Field>
-          <Field label="ملاحظات">
-            <Textarea value={form.notes} onChange={(e) => updateField("notes", e.target.value)} disabled={!canEdit} />
           </Field>
         </div>
       </section>
@@ -1420,31 +1397,31 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 // --- Religious Section ---
 
 function ReligiousSection({
-  title,
   data,
   onChange,
   disabled,
 }: {
-  title: string
   data: ReligiousVisits
   onChange: React.Dispatch<React.SetStateAction<ReligiousVisits>>
   disabled: boolean
 }) {
   function updateItem(key: keyof ReligiousVisits, field: string, value: unknown) {
-    onChange((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], [field]: value },
-    }))
+    onChange((prev) => {
+      const updated = { ...prev[key], [field]: value }
+      if (field === "done" && !value) {
+        delete updated.visitDate
+      }
+      return { ...prev, [key]: updated }
+    })
   }
 
   return (
     <div className="rounded-lg border p-4">
-      <h3 className="mb-3 text-sm font-medium">{title}</h3>
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {RELIGIOUS_KEYS.map(({ key, label }) => {
           const item = data[key] ?? defaultReligiousItem()
           return (
-            <div key={key}>
+            <div key={key} className="space-y-2">
               <div className="flex items-center gap-3">
                 <Switch
                   checked={item.done}
@@ -1454,31 +1431,14 @@ function ReligiousSection({
                 <span className="text-sm">{label}</span>
               </div>
               {item.done && (
-                <div className="mt-2 grid grid-cols-3 gap-2 ps-10">
-                  <Field label="تاريخ الأداء">
-                    <Input
-                      type="date"
-                      value={item.visitDate || ""}
-                      onChange={(e) => updateItem(key, "visitDate", e.target.value)}
-                      disabled={disabled}
-                    />
-                  </Field>
-                  <Field label="تاريخ التحديث">
-                    <Input
-                      type="date"
-                      value={item.updateDate || ""}
-                      onChange={(e) => updateItem(key, "updateDate", e.target.value)}
-                      disabled={disabled}
-                    />
-                  </Field>
-                  <Field label="التحديث القادم">
-                    <Input
-                      type="date"
-                      value={item.nextUpdate || ""}
-                      onChange={(e) => updateItem(key, "nextUpdate", e.target.value)}
-                      disabled={disabled}
-                    />
-                  </Field>
+                <div className="flex flex-col gap-1 pr-11">
+                  <Label className="text-xs">تاريخ الزيارة</Label>
+                  <Input
+                    type="date"
+                    value={item.visitDate ?? ""}
+                    onChange={(e) => updateItem(key, "visitDate", e.target.value || undefined)}
+                    disabled={disabled}
+                  />
                 </div>
               )}
             </div>
@@ -1898,64 +1858,39 @@ function DependentFormSection({
         {/* Dependent Religious Visits */}
         <div className="rounded-lg border p-3">
           <h4 className="mb-3 text-sm font-medium">الزيارات الدينية</h4>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {DEP_RELIGIOUS_KEYS.map(({ key, label }) => {
               const item = religious[key] ?? defaultDependentReligiousItem()
               return (
-                <div key={key}>
+                <div key={key} className="space-y-2">
                   <div className="flex items-center gap-3">
                     <Switch
                       checked={item.done}
                       onCheckedChange={(checked) =>
-                        setReligious((prev) => ({
-                          ...prev,
-                          [key]: { ...prev[key], done: checked },
-                        }))
+                        setReligious((prev) => {
+                          const updated = { ...prev[key], done: checked }
+                          if (!checked) {
+                            delete updated.visitDate
+                          }
+                          return { ...prev, [key]: updated }
+                        })
                       }
                     />
                     <span className="text-sm">{label}</span>
                   </div>
                   {item.done && (
-                    <div className="mt-2 grid grid-cols-3 gap-2 ps-10">
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs text-muted-foreground">تاريخ الأداء</Label>
-                        <Input
-                          type="date"
-                          value={item.visitDate ?? ""}
-                          onChange={(e) =>
-                            setReligious((prev) => ({
-                              ...prev,
-                              [key]: { ...prev[key], visitDate: e.target.value },
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs text-muted-foreground">تاريخ التحديث</Label>
-                        <Input
-                          type="date"
-                          value={item.updateDate ?? ""}
-                          onChange={(e) =>
-                            setReligious((prev) => ({
-                              ...prev,
-                              [key]: { ...prev[key], updateDate: e.target.value },
-                            }))
-                          }
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <Label className="text-xs text-muted-foreground">التحديث القادم</Label>
-                        <Input
-                          type="date"
-                          value={item.nextUpdate ?? ""}
-                          onChange={(e) =>
-                            setReligious((prev) => ({
-                              ...prev,
-                              [key]: { ...prev[key], nextUpdate: e.target.value },
-                            }))
-                          }
-                        />
-                      </div>
+                    <div className="flex flex-col gap-1 pr-11">
+                      <Label className="text-xs">تاريخ الزيارة</Label>
+                      <Input
+                        type="date"
+                        value={item.visitDate ?? ""}
+                        onChange={(e) =>
+                          setReligious((prev) => ({
+                            ...prev,
+                            [key]: { ...prev[key], visitDate: e.target.value || undefined },
+                          }))
+                        }
+                      />
                     </div>
                   )}
                 </div>

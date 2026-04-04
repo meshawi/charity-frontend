@@ -32,8 +32,6 @@ export type BeneficiaryListItem = {
 export type ReligiousItem = {
   done: boolean
   visitDate?: string
-  updateDate?: string
-  nextUpdate?: string
 }
 
 export type ReligiousVisits = {
@@ -71,8 +69,6 @@ export type FinancialObligations = Record<string, ObligationItem>
 export type DependentReligiousItem = {
   done: boolean
   visitDate?: string
-  updateDate?: string
-  nextUpdate?: string
 }
 
 export type DependentReligious = {
@@ -89,7 +85,7 @@ export type Dependent = {
   gender: "male" | "female"
   dateOfBirth: string | null
   age: number | null
-  relationship: "son" | "daughter" | "other" | null
+  relationship: "son" | "daughter" | "wife" | "other" | null
   relationshipOther: string | null
   dependentMaritalStatus: string | null
   schoolName: string | null
@@ -146,6 +142,7 @@ export type Beneficiary = {
     | null
   phone: string | null
   otherPhone: string | null
+  otherPhoneRelationship: string | null
   familyCount: number | null
   dependentsCount: number | null
   iban: string | null
@@ -158,21 +155,17 @@ export type Beneficiary = {
   buildingCondition: string | null
   buildingCapacity: string | null
   husbandReligious: ReligiousVisits | null
-  wifeReligious: ReligiousVisits | null
   furnitureAppliances: FurnitureAppliances | null
   incomeSources: IncomeSources | null
   financialObligations: FinancialObligations | null
-  attributes: string | null
-  enrollment: string | null
-  visitDate: string | null
-  updateDone: string | null
+  researcherName: string | null
+  firstVisitDate: string | null
+  updateDate: string | null
   nextUpdate: string | null
-  specialDate: string | null
   healthStatus: string | null
   origin: string | null
   familySkillsTalents: string | null
   researcherNotes: string | null
-  notes: string | null
   status: BeneficiaryStatus
   returnNote: string | null
   createdAt: string
@@ -206,6 +199,7 @@ export type CreateBeneficiaryRequest = {
   maritalStatus?: string | null
   phone?: string | null
   otherPhone?: string | null
+  otherPhoneRelationship?: string | null
   familyCount?: number | null
   iban?: string | null
   bank?: string | null
@@ -217,21 +211,17 @@ export type CreateBeneficiaryRequest = {
   buildingCondition?: string | null
   buildingCapacity?: string | null
   husbandReligious?: ReligiousVisits
-  wifeReligious?: ReligiousVisits
   furnitureAppliances?: FurnitureAppliances
   incomeSources?: IncomeSources
   financialObligations?: FinancialObligations
-  attributes?: string | null
-  enrollment?: string | null
-  visitDate?: string | null
-  updateDone?: string | null
+  researcherName?: string | null
+  firstVisitDate?: string | null
+  updateDate?: string | null
   nextUpdate?: string | null
-  specialDate?: string | null
   healthStatus?: string | null
   origin?: string | null
   familySkillsTalents?: string | null
   researcherNotes?: string | null
-  notes?: string | null
 }
 
 export type UpdateBeneficiaryRequest = Partial<CreateBeneficiaryRequest>
@@ -301,7 +291,7 @@ export type CreateDependentRequest = {
   nationalId?: string
   gender?: "male" | "female"
   dateOfBirth?: string
-  relationship?: "son" | "daughter" | "other"
+  relationship?: "son" | "daughter" | "wife" | "other"
   relationshipOther?: string
   dependentMaritalStatus?: string
   schoolName?: string
