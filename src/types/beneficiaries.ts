@@ -100,6 +100,7 @@ export type Dependent = {
     | "dropped_out"
     | "not_enrolled"
     | null
+  healthCondition: "healthy" | "unhealthy" | null
   healthStatus: string | null
   religious: DependentReligious | null
   notes: string | null
@@ -158,10 +159,12 @@ export type Beneficiary = {
   furnitureAppliances: FurnitureAppliances | null
   incomeSources: IncomeSources | null
   financialObligations: FinancialObligations | null
+  rentDeduction: number | null
   researcherName: string | null
   firstVisitDate: string | null
   updateDate: string | null
   nextUpdate: string | null
+  healthCondition: "healthy" | "unhealthy" | null
   healthStatus: string | null
   origin: string | null
   familySkillsTalents: string | null
@@ -214,10 +217,12 @@ export type CreateBeneficiaryRequest = {
   furnitureAppliances?: FurnitureAppliances
   incomeSources?: IncomeSources
   financialObligations?: FinancialObligations
+  rentDeduction?: number | null
   researcherName?: string | null
   firstVisitDate?: string | null
   updateDate?: string | null
   nextUpdate?: string | null
+  healthCondition?: "healthy" | "unhealthy" | null
   healthStatus?: string | null
   origin?: string | null
   familySkillsTalents?: string | null
@@ -301,6 +306,7 @@ export type CreateDependentRequest = {
   academicGrade?: string
   weaknessSubjects?: string
   educationStatus?: "enrolled" | "graduated" | "dropped_out" | "not_enrolled"
+  healthCondition?: "healthy" | "unhealthy"
   healthStatus?: string
   religious?: DependentReligious
   notes?: string

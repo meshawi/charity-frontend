@@ -353,6 +353,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     firstVisitDate: "",
     updateDate: "",
     nextUpdate: "",
+    healthCondition: "",
     healthStatus: "",
     origin: "",
     familySkillsTalents: "",
@@ -363,6 +364,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
   const [furniture, setFurniture] = React.useState<FurnitureAppliances>({})
   const [income, setIncome] = React.useState<IncomeSources>({})
   const [obligations, setObligations] = React.useState<FinancialObligations>({})
+  const [rentDeduction, setRentDeduction] = React.useState(0)
 
   const loadData = React.useCallback(async () => {
     if (!id) return
@@ -407,6 +409,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         firstVisitDate: b.firstVisitDate ? b.firstVisitDate.split("T")[0] : "",
         updateDate: b.updateDate ? b.updateDate.split("T")[0] : "",
         nextUpdate: b.nextUpdate ? b.nextUpdate.split("T")[0] : "",
+        healthCondition: b.healthCondition || "",
         healthStatus: b.healthStatus || "",
         origin: b.origin || "",
         familySkillsTalents: b.familySkillsTalents || "",
@@ -416,6 +419,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
       setFurniture(initFurniture(b.furnitureAppliances))
       setIncome(initIncome(b.incomeSources))
       setObligations(initObligations(b.financialObligations))
+      setRentDeduction(b.rentDeduction ?? 0)
     } catch {
       toast.error("حدث خطأ في تحميل بيانات المستفيد")
     } finally {
@@ -460,11 +464,13 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         furnitureAppliances: furniture,
         incomeSources: income,
         financialObligations: obligations,
+        rentDeduction: rentDeduction,
         researcherName: strOrNull(form.researcherName),
         firstVisitDate: strOrNull(form.firstVisitDate),
         updateDate: strOrNull(form.updateDate),
         nextUpdate: strOrNull(form.nextUpdate),
-        healthStatus: strOrNull(form.healthStatus),
+        healthCondition: (form.healthCondition as "healthy" | "unhealthy") || null,
+        healthStatus: form.healthCondition === "unhealthy" ? strOrNull(form.healthStatus) : null,
         origin: strOrNull(form.origin),
         familySkillsTalents: strOrNull(form.familySkillsTalents),
         researcherNotes: strOrNull(form.researcherNotes),
@@ -515,8 +521,9 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     (sum, { key }) => sum + (income[key]?.monthly ?? 0),
     0
   )
+  const netIncome = totalMonthlyIncome - rentDeduction
   const familyCountNum = form.familyCount ? Number(form.familyCount) : 0
-  const perCapita = familyCountNum > 0 ? Math.round(totalMonthlyIncome / familyCountNum) : 0
+  const perCapita = familyCountNum > 0 ? Math.round(netIncome / familyCountNum) : 0
 
   const totalMonthlyObligations = OBLIGATION_KEYS.reduce(
     (sum, { key }) => sum + (obligations[key]?.monthly ?? 0),
@@ -892,6 +899,24 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               <TableRow className="bg-muted/30 font-medium">
                 <TableCell>المجموع</TableCell>
                 <TableCell>{totalMonthlyIncome.toLocaleString("en")}</TableCell>
+                <TableCell />
+              </TableRow>
+              <TableRow className="bg-muted/30 font-medium">
+                <TableCell>خصم الإيجار</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    className="w-24"
+                    value={rentDeduction}
+                    onChange={(e) => setRentDeduction(Number(e.target.value) || 0)}
+                    disabled={!canEdit}
+                  />
+                </TableCell>
+                <TableCell />
+              </TableRow>
+              <TableRow className="bg-muted/30 font-medium">
+                <TableCell>صافي الدخل</TableCell>
+                <TableCell>{netIncome.toLocaleString("en")}</TableCell>
                 <TableCell className="text-xs">
                   نصيب الفرد: {perCapita.toLocaleString("en")}
                 </TableCell>
@@ -1059,10 +1084,23 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
             <Input type="date" value={form.nextUpdate} onChange={(e) => updateField("nextUpdate", e.target.value)} disabled={!canEdit} />
           </Field>
         </div>
+        <div className="mt-4 flex items-center gap-3">
+          <Switch
+            checked={form.healthCondition === "unhealthy"}
+            onCheckedChange={(checked) => {
+              updateField("healthCondition", checked ? "unhealthy" : "healthy")
+              if (!checked) updateField("healthStatus", "")
+            }}
+            disabled={!canEdit}
+          />
+          <Label>هل يعاني من مشاكل صحية؟</Label>
+        </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="الحالة الصحية">
-            <Textarea value={form.healthStatus} onChange={(e) => updateField("healthStatus", e.target.value)} disabled={!canEdit} />
-          </Field>
+          {form.healthCondition === "unhealthy" && (
+            <Field label="تفاصيل الحالة الصحية">
+              <Textarea value={form.healthStatus} onChange={(e) => updateField("healthStatus", e.target.value)} disabled={!canEdit} />
+            </Field>
+          )}
           <Field label="المهن والمواهب لأفراد العائلة">
             <Textarea value={form.familySkillsTalents} onChange={(e) => updateField("familySkillsTalents", e.target.value)} disabled={!canEdit} />
           </Field>
@@ -1660,6 +1698,7 @@ function DependentFormSection({
   const [academicGrade, setAcademicGrade] = React.useState("")
   const [weaknessSubjects, setWeaknessSubjects] = React.useState("")
   const [educationStatus, setEducationStatus] = React.useState("")
+  const [healthCondition, setHealthCondition] = React.useState("")
   const [healthStatus, setHealthStatus] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [religious, setReligious] = React.useState<DependentReligious>({})
@@ -1681,6 +1720,7 @@ function DependentFormSection({
       setAcademicGrade(dependent.academicGrade || "")
       setWeaknessSubjects(dependent.weaknessSubjects || "")
       setEducationStatus(dependent.educationStatus || "")
+      setHealthCondition(dependent.healthCondition || "")
       setHealthStatus(dependent.healthStatus || "")
       setNotes(dependent.notes || "")
       setReligious(initDependentReligious(dependent.religious))
@@ -1699,6 +1739,7 @@ function DependentFormSection({
       setAcademicGrade("")
       setWeaknessSubjects("")
       setEducationStatus("")
+      setHealthCondition("")
       setHealthStatus("")
       setNotes("")
       setReligious(initDependentReligious(null))
@@ -1725,7 +1766,8 @@ function DependentFormSection({
         weaknessSubjects: weaknessSubjects || undefined,
         educationStatus:
           (educationStatus as "enrolled" | "graduated" | "dropped_out" | "not_enrolled") || undefined,
-        healthStatus: healthStatus || undefined,
+        healthCondition: (healthCondition as "healthy" | "unhealthy") || undefined,
+        healthStatus: healthCondition === "unhealthy" ? healthStatus || undefined : undefined,
         religious: religious,
         notes: notes || undefined,
       }
@@ -1846,14 +1888,26 @@ function DependentFormSection({
             <Textarea id="dep-weakness" value={weaknessSubjects} onChange={(e) => setWeaknessSubjects(e.target.value)} />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-health">الحالة الصحية</Label>
-            <Textarea id="dep-health" value={healthStatus} onChange={(e) => setHealthStatus(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <Label htmlFor="dep-notes">ملاحظات</Label>
             <Textarea id="dep-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={healthCondition === "unhealthy"}
+            onCheckedChange={(checked) => {
+              setHealthCondition(checked ? "unhealthy" : "healthy")
+              if (!checked) setHealthStatus("")
+            }}
+          />
+          <Label>هل يعاني من مشاكل صحية؟</Label>
+        </div>
+        {healthCondition === "unhealthy" && (
+          <div className="flex flex-col gap-1.5">
+            <Label>تفاصيل الحالة الصحية</Label>
+            <Textarea value={healthStatus} onChange={(e) => setHealthStatus(e.target.value)} />
+          </div>
+        )}
 
         {/* Dependent Religious Visits */}
         <div className="rounded-lg border p-3">
