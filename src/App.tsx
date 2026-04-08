@@ -8,6 +8,7 @@ import CategoriesPage from "@/pages/categories"
 import ProgramsPage from "@/pages/programs"
 import BeneficiariesPage from "@/pages/beneficiaries"
 import BeneficiaryDetailPage from "@/pages/beneficiary-detail"
+import BeneficiaryReportPage from "@/pages/beneficiary-report"
 import DisbursementProcessPage from "@/pages/disbursement-process"
 import DisbursementsPage from "@/pages/disbursements"
 import ReportsPage from "@/pages/reports"
@@ -39,7 +40,7 @@ export default function App() {
           />
           <Route
             path="/beneficiaries/:id/view"
-            element={<BeneficiaryDetailPage viewOnly />}
+            element={<BeneficiaryReportPage />}
           />
           <Route
             path="/disbursement"

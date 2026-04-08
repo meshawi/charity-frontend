@@ -1,5 +1,5 @@
-﻿import * as React from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import * as React from "react"
+import { useParams, useNavigate } from "react-router-dom"
 import { useAuth } from "@/contexts/auth-context"
 import * as beneficiariesApi from "@/lib/beneficiaries-api"
 import * as dependentsApi from "@/lib/dependents-api"
@@ -9,17 +9,6 @@ import type {
   Beneficiary,
   BeneficiaryDisbursement,
   Dependent,
-  CategoryHistoryEntry,
-  ReligiousVisits,
-  ReligiousItem,
-  FurnitureAppliances,
-  ApplianceCondition,
-  IncomeSources,
-  IncomeItem,
-  FinancialObligations,
-  ObligationItem,
-  DependentReligious,
-  DependentReligiousItem,
   DocumentType,
   ProgressResponse,
   SubmitReviewErrorDetails,
@@ -47,8 +36,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
@@ -69,18 +56,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import {
   LoaderCircle,
   ArrowRight,
   Save,
   Plus,
-  MoreHorizontal,
   Pencil,
   Trash2,
   History,
@@ -92,217 +73,37 @@ import {
   Eye,
 } from "lucide-react"
 
-const MARITAL_LABELS: Record<string, string> = {
-  married: "متزوج / متزوجة",
-  single: "أعزب / عزباء",
-  divorced: "مطلقة",
-  widowed: "أرملة",
-  abandoned: "مهجورة",
-}
-
-const EDUCATION_LABELS: Record<string, string> = {
-  enrolled: "ملتحق",
-  graduated: "متخرج",
-  dropped_out: "منقطع",
-  not_enrolled: "غير ملتحق",
-}
-
-const SCHOOL_TYPE_LABELS: Record<string, string> = {
-  public: "حكومية",
-  private: "أهلية",
-  other: "أخرى",
-}
-
-const RELATIONSHIP_LABELS: Record<string, string> = {
-  son: "ابن",
-  daughter: "ابنة",
-  wife: "زوجة",
-  other: "أخرى",
-}
-
-const RESIDENCE_AREA_LABELS: Record<string, string> = {
-  aldeira: "الديرة",
-  aladwa: "العدوة",
-  alrashidia: "الراشدية",
-  alabadia: "العبادية",
-  alsaadoon: "السعدون",
-  aliskan: "الإسكان",
-  aldahia: "الضاحية",
-  aldana: "الدانة",
-  other: "أخرى",
-}
-
-const BUILDING_OWNERSHIP_LABELS: Record<string, string> = {
-  private: "ملك خاص",
-  shared: "مشترك",
-  rented: "مستأجر",
-  charity_house: "منزل خيري",
-  developmental_housing: "اسكان تنموي",
-}
-
-const BUILDING_TYPE_LABELS: Record<string, string> = {
-  arabic: "عربي",
-  concrete: "مسلح",
-  other: "غيره",
-}
-
-const BUILDING_CONDITION_LABELS: Record<string, string> = {
-  good: "جيدة",
-  average: "متوسطة",
-  needs_repair: "بحاجة لإصلاح",
-}
-
-const BUILDING_CAPACITY_LABELS: Record<string, string> = {
-  small: "صغير (لا يكفي الأسرة)",
-  medium: "متوسط",
-  sufficient: "يكفي الأسرة",
-}
-
-// --- Furniture/Appliances ---
-
-const APPLIANCE_KEYS: { key: string; label: string }[] = [
-  { key: "windowAC", label: "مكيفات نافذة" },
-  { key: "splitAC", label: "مكيفات وحدة (سبليت)" },
-  { key: "washingMachines", label: "غسالات" },
-  { key: "refrigerators", label: "ثلاجات" },
-  { key: "fans", label: "مراوح" },
-  { key: "freezers", label: "فريزرات" },
-  { key: "ovens", label: "أفران" },
-  { key: "heaters", label: "سخانات" },
-  { key: "spaceHeaters", label: "دفايات" },
-  { key: "computers", label: "كمبيوترات" },
-  { key: "phones", label: "جوالات" },
-  { key: "tvScreens", label: "تلفزيونات / شاشات" },
-  { key: "mattresses", label: "مراتب / فرش" },
-  { key: "wardrobes", label: "دولاب" },
-  { key: "blankets", label: "بطانيات" },
-  { key: "cars", label: "عدد السيارات" },
-]
-
-const CONDITION_KEYS: { key: keyof Omit<ApplianceCondition, "notes">; label: string }[] = [
-  { key: "good", label: "جيدة" },
-  { key: "unavailable", label: "غير متوفر" },
-  { key: "needsRepair", label: "إصلاح" },
-  { key: "needsReplacement", label: "استبدال" },
-]
-
-// --- Income Sources ---
-
-const INCOME_KEYS: { key: string; label: string }[] = [
-  { key: "salary", label: "الراتب" },
-  { key: "socialInsurance", label: "التأمينات الاجتماعية" },
-  { key: "modernSocialSecurity", label: "الضمان الاجتماعي المطور" },
-  { key: "citizenAccount", label: "حساب المواطن" },
-  { key: "pension", label: "راتب تقاعدي" },
-  { key: "disabilityAid", label: "مساعدة معوقين (التأهيل الشامل)" },
-  { key: "alimony", label: "النفقة" },
-  { key: "freelance", label: "عمل حر (تقديري)" },
-  { key: "other", label: "أخرى" },
-]
-
-// --- Financial Obligations ---
-
-const OBLIGATION_KEYS: { key: string; label: string }[] = [
-  { key: "rent", label: "إيجار سكن" },
-  { key: "loanPayment", label: "تسديد قرض" },
-  { key: "carInstallment", label: "أقساط سيارة" },
-  { key: "domesticWorker", label: "عاملة منزلية / عامل" },
-  { key: "other", label: "أخرى" },
-]
-
-// --- Religious visits ---
-
-const RELIGIOUS_KEYS: { key: keyof ReligiousVisits; label: string }[] = [
-  { key: "hajj", label: "هل تم تأدية الحج" },
-  { key: "umrah", label: "هل تم تأدية العمرة" },
-  { key: "prophetMosque", label: "هل تمت زيارة المسجد النبوي" },
-]
-
-const DEP_RELIGIOUS_KEYS: { key: keyof DependentReligious; label: string }[] = [
-  { key: "hajj", label: "هل تم تأدية الحج" },
-  { key: "umrah", label: "هل تم تأدية العمرة" },
-  { key: "prophetMosque", label: "هل تمت زيارة المسجد النبوي" },
-]
-
-function calculateAge(dateOfBirth: string | null): number | null {
-  if (!dateOfBirth) return null
-  const birth = new Date(dateOfBirth)
-  const today = new Date()
-  let age = today.getFullYear() - birth.getFullYear()
-  const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return age
-}
-
-function defaultDependentReligiousItem(): DependentReligiousItem {
-  return { done: false }
-}
-
-function initDependentReligious(data: DependentReligious | null): DependentReligious {
-  const result: DependentReligious = {}
-  for (const { key } of DEP_RELIGIOUS_KEYS) {
-    result[key] = data?.[key] ?? defaultDependentReligiousItem()
-  }
-  return result
-}
-
-// --- Default JSON values ---
-
-function defaultApplianceCondition(): ApplianceCondition {
-  return { good: 0, unavailable: 0, needsRepair: 0, needsReplacement: 0, notes: "" }
-}
-
-function defaultReligiousItem(): ReligiousItem {
-  return { done: false }
-}
-
-function defaultIncomeItem(): IncomeItem {
-  return { monthly: 0, notes: "" }
-}
-
-function defaultObligationItem(): ObligationItem {
-  return { monthly: 0, notes: "" }
-}
-
-function initFurniture(data: FurnitureAppliances | null): FurnitureAppliances {
-  const result: FurnitureAppliances = {}
-  for (const { key } of APPLIANCE_KEYS) {
-    result[key] = data?.[key] ?? defaultApplianceCondition()
-  }
-  return result
-}
-
-function initIncome(data: IncomeSources | null): IncomeSources {
-  const result: IncomeSources = {}
-  for (const { key } of INCOME_KEYS) {
-    result[key] = data?.[key] ?? defaultIncomeItem()
-  }
-  return result
-}
-
-function initObligations(data: FinancialObligations | null): FinancialObligations {
-  const result: FinancialObligations = {}
-  for (const { key } of OBLIGATION_KEYS) {
-    result[key] = data?.[key] ?? defaultObligationItem()
-  }
-  return result
-}
-
-function initReligious(data: ReligiousVisits | null): ReligiousVisits {
-  const result: ReligiousVisits = {}
-  for (const { key } of RELIGIOUS_KEYS) {
-    result[key] = data?.[key] ?? defaultReligiousItem()
-  }
-  return result
-}
+import { Field } from "@/components/beneficiary/field"
+import { ReligiousSection } from "@/components/beneficiary/religious-section"
+import { AssignCategoryDialog } from "@/components/beneficiary/assign-category-dialog"
+import { CategoryHistoryDialog } from "@/components/beneficiary/category-history-dialog"
+import { DependentFormSection } from "@/components/beneficiary/dependent-form-section"
+import { UploadDocumentDialog } from "@/components/beneficiary/upload-document-dialog"
+import {
+  MARITAL_LABELS,
+  RELATIONSHIP_LABELS,
+  RESIDENCE_AREA_LABELS,
+  BUILDING_OWNERSHIP_LABELS,
+  BUILDING_TYPE_LABELS,
+  BUILDING_CONDITION_LABELS,
+  BUILDING_CAPACITY_LABELS,
+  APPLIANCE_KEYS,
+  CONDITION_KEYS,
+  INCOME_KEYS,
+  OBLIGATION_KEYS,
+  RELIGIOUS_KEYS,
+  calculateAge,
+  initFurniture,
+  initIncome,
+  initObligations,
+  initReligious,
+} from "@/lib/beneficiary-constants"
 
 // ===========================================================================
 
-export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?: boolean } = {}) {
+export default function BeneficiaryDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const location = useLocation()
-  const isViewMode = viewOnly || location.pathname.endsWith("/view")
   const auth = useAuth()
   const [beneficiary, setBeneficiary] = React.useState<Beneficiary | null>(null)
   const [categories, setCategories] = React.useState<Category[]>([])
@@ -315,6 +116,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
 
   const [categoryDialogOpen, setCategoryDialogOpen] = React.useState(false)
   const [historyDialogOpen, setHistoryDialogOpen] = React.useState(false)
+  const [activeTab, setActiveTab] = React.useState<"info" | "dependents" | "documents">("info")
 
   const [progress, setProgress] = React.useState<ProgressResponse | null>(null)
   const [submittingReview, setSubmittingReview] = React.useState(false)
@@ -325,8 +127,8 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
   const [uploadOpen, setUploadOpen] = React.useState(false)
   const [previewDoc, setPreviewDoc] = React.useState<{ name: string; url: string } | null>(null)
 
-  const canEdit = !isViewMode && auth.hasPermission("edit_profile")
-  const canAssignCategory = !isViewMode && auth.hasPermission("assign_category")
+  const canEdit = auth.hasPermission("edit_profile")
+  const canAssignCategory = auth.hasPermission("assign_category")
 
   // --- Form state ---
   const [form, setForm] = React.useState({
@@ -360,10 +162,10 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
     researcherNotes: "",
   })
 
-  const [husbandReligious, setHusbandReligious] = React.useState<ReligiousVisits>({})
-  const [furniture, setFurniture] = React.useState<FurnitureAppliances>({})
-  const [income, setIncome] = React.useState<IncomeSources>({})
-  const [obligations, setObligations] = React.useState<FinancialObligations>({})
+  const [husbandReligious, setHusbandReligious] = React.useState<Record<string, { done: boolean; visitDate?: string }>>({})
+  const [furniture, setFurniture] = React.useState<Record<string, Record<string, unknown>>>({})
+  const [income, setIncome] = React.useState<Record<string, { monthly: number; notes: string }>>({})
+  const [obligations, setObligations] = React.useState<Record<string, { monthly: number; notes: string }>>({})
   const [rentDeduction, setRentDeduction] = React.useState(0)
 
   const loadData = React.useCallback(async () => {
@@ -377,7 +179,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
       setCategories(cRes.categories)
       const b = bRes.beneficiary
 
-      // Load progress and document types in parallel
       const [progressRes, docTypesRes] = await Promise.all([
         beneficiariesApi.getProgress(Number(id)).catch(() => null),
         beneficiariesApi.getDocumentTypes(Number(id)).catch(() => null),
@@ -554,7 +355,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           <Button
             variant="ghost"
             size="icon-sm"
-            onClick={() => isViewMode ? navigate(-1) : navigate("/beneficiaries")}
+            onClick={() => navigate("/beneficiaries")}
           >
             <ArrowRight className="size-4" />
           </Button>
@@ -566,9 +367,6 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
               {beneficiary.beneficiaryNumber}
             </p>
           </div>
-          {isViewMode && (
-            <Badge variant="secondary">عرض فقط</Badge>
-          )}
           {beneficiary.category && (
             <Badge
               variant="outline"
@@ -590,6 +388,15 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           )}
         </div>
         <div className="flex items-center gap-2">
+          {/* View report in new tab */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open(`/beneficiaries/${id}/view`, "_blank")}
+          >
+            <Eye className="size-4" />
+            عرض بشكل تقرير
+          </Button>
           {canEdit && (beneficiary.status === "draft" || beneficiary.status === "returned") && (
             <Button
               variant="outline"
@@ -700,6 +507,33 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           )}
         </div>
       )}
+
+      {/* === Tab Bar === */}
+      <div className="mb-6 flex gap-1 rounded-lg border bg-muted/30 p-1">
+        <button
+          type="button"
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === "info" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("info")}
+        >
+          بيانات المستفيد
+        </button>
+        <button
+          type="button"
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === "dependents" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("dependents")}
+        >
+          التابعين ({beneficiary.dependents.length})
+        </button>
+        <button
+          type="button"
+          className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${activeTab === "documents" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setActiveTab("documents")}
+        >
+          المستندات ({beneficiary.documents?.length ?? 0})
+        </button>
+      </div>
+
+      {activeTab === "info" && (<>
 
       {/* === Section 1: Basic Information === */}
       <section className="mb-6">
@@ -834,7 +668,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
 
       <Separator />
 
-      {/* === Section 3: Financial  IBAN/Bank === */}
+      {/* === Section 3: Financial IBAN/Bank === */}
       <section className="my-6">
         <h2 className="mb-3 text-sm font-medium text-muted-foreground">
           المعلومات المالية
@@ -1044,7 +878,7 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
                   <TableCell>
                     <Input
                       className="w-28"
-                      value={furniture[key]?.notes ?? ""}
+                      value={(furniture[key]?.notes as string) ?? ""}
                       onChange={(e) =>
                         setFurniture((prev) => ({
                           ...prev,
@@ -1110,8 +944,9 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         </div>
       </section>
 
-      <Separator />
+      </>)}
 
+      {activeTab === "dependents" && (<>
       {/* === Dependents === */}
       <section className="my-6">
         <div className="mb-3 flex items-center justify-between">
@@ -1126,78 +961,38 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
           )}
         </div>
 
-        {/* Inline dependent form */}
+        {/* Inline dependent form (create / edit) */}
         {(createDepOpen || editDep) && (
           <DependentFormSection
+            key={editDep?.id ?? "new"}
             beneficiaryId={beneficiary.id}
             dependent={editDep}
             onCancel={() => { setCreateDepOpen(false); setEditDep(null) }}
             onSuccess={() => { setCreateDepOpen(false); setEditDep(null); loadData() }}
           />
         )}
+
+        {/* Dependent cards */}
         {beneficiary.dependents.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>الاسم</TableHead>
-                  <TableHead>رقم الهوية</TableHead>
-                  <TableHead>الجنس</TableHead>
-                  <TableHead>تاريخ الميلاد</TableHead>
-                  <TableHead>العمر</TableHead>
-                  <TableHead>صلة القرابة</TableHead>
-                  <TableHead>الحالة التعليمية</TableHead>
-                  {canEdit && <TableHead className="w-12" />}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {beneficiary.dependents.map((dep) => (
-                  <TableRow key={dep.id}>
-                    <TableCell className="font-medium">{dep.name || ""}</TableCell>
-                    <TableCell dir="ltr" className="text-start">{dep.nationalId || ""}</TableCell>
-                    <TableCell>{dep.gender ? GENDER_LABELS[dep.gender] : ""}</TableCell>
-                    <TableCell>{dep.dateOfBirth || ""}</TableCell>
-                    <TableCell>{dep.age != null ? dep.age : ""}</TableCell>
-                    <TableCell>
-                      {dep.relationship
-                        ? dep.relationship === "other"
-                          ? dep.relationshipOther || "أخرى"
-                          : RELATIONSHIP_LABELS[dep.relationship]
-                        : ""}
-                    </TableCell>
-                    <TableCell>{dep.educationStatus ? EDUCATION_LABELS[dep.educationStatus] : ""}</TableCell>
-                    {canEdit && (
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm">
-                              <MoreHorizontal className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditDep(dep)}>
-                              <Pencil className="size-4" />
-                              تعديل
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => setDeleteDep(dep)} className="text-destructive">
-                              <Trash2 className="size-4" />
-                              حذف
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="space-y-2">
+            {beneficiary.dependents.map((dep) => (
+              <DependentCard
+                key={dep.id}
+                dep={dep}
+                isEditing={editDep?.id === dep.id}
+                canEdit={canEdit}
+                onEdit={() => setEditDep(dep)}
+                onDelete={() => setDeleteDep(dep)}
+              />
+            ))}
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">لا يوجد تابعين</p>
         )}
       </section>
+      </>)}
 
-      <Separator />
+      {activeTab === "documents" && (<>
 
       {/* === Documents === */}
       <section className="my-6">
@@ -1335,6 +1130,8 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
         </section>
       )}
 
+      </>)}
+
       {/* Metadata */}
       <Separator />
       <div className="mt-6 flex gap-6 text-sm text-muted-foreground">
@@ -1420,657 +1217,64 @@ export default function BeneficiaryDetailPage({ viewOnly = false }: { viewOnly?:
 }
 
 // ===========================================================================
-// Sub-components
+// Dependent Card (expandable)
 // ===========================================================================
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
-    </div>
-  )
-}
-
-// --- Religious Section ---
-
-function ReligiousSection({
-  data,
-  onChange,
-  disabled,
+function DependentCard({
+  dep,
+  isEditing,
+  canEdit,
+  onEdit,
+  onDelete,
 }: {
-  data: ReligiousVisits
-  onChange: React.Dispatch<React.SetStateAction<ReligiousVisits>>
-  disabled: boolean
+  dep: Dependent
+  isEditing: boolean
+  canEdit: boolean
+  onEdit: () => void
+  onDelete: () => void
 }) {
-  function updateItem(key: keyof ReligiousVisits, field: string, value: unknown) {
-    onChange((prev) => {
-      const updated = { ...prev[key], [field]: value }
-      if (field === "done" && !value) {
-        delete updated.visitDate
-      }
-      return { ...prev, [key]: updated }
-    })
-  }
-
   return (
-    <div className="rounded-lg border p-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {RELIGIOUS_KEYS.map(({ key, label }) => {
-          const item = data[key] ?? defaultReligiousItem()
-          return (
-            <div key={key} className="space-y-2">
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={item.done}
-                  onCheckedChange={(checked) => updateItem(key, "done", checked)}
-                  disabled={disabled}
-                />
-                <span className="text-sm">{label}</span>
-              </div>
-              {item.done && (
-                <div className="flex flex-col gap-1 pr-11">
-                  <Label className="text-xs">تاريخ الزيارة</Label>
-                  <Input
-                    type="date"
-                    value={item.visitDate ?? ""}
-                    onChange={(e) => updateItem(key, "visitDate", e.target.value || undefined)}
-                    disabled={disabled}
-                  />
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// --- Assign Category Dialog ---
-
-function AssignCategoryDialog({
-  beneficiaryId,
-  currentCategoryId,
-  categories,
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  beneficiaryId: number
-  currentCategoryId: number | null
-  categories: Category[]
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-}) {
-  const [categoryId, setCategoryId] = React.useState("")
-  const [note, setNote] = React.useState("")
-  const [submitting, setSubmitting] = React.useState(false)
-
-  React.useEffect(() => {
-    if (open) {
-      setCategoryId(currentCategoryId ? String(currentCategoryId) : "")
-      setNote("")
-    }
-  }, [open, currentCategoryId])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!categoryId || !note.trim()) return
-    setSubmitting(true)
-    try {
-      await beneficiariesApi.assignCategory(beneficiaryId, {
-        categoryId: Number(categoryId),
-        note: note.trim(),
-      })
-      toast.success("تم تعيين الفئة بنجاح")
-      onOpenChange(false)
-      onSuccess()
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "حدث خطأ غير متوقع")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>تعيين الفئة</DialogTitle>
-          <DialogDescription>اختر الفئة الجديدة وأدخل سبب التعيين</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label>الفئة</Label>
-            <Select value={categoryId} onValueChange={setCategoryId}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر الفئة" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={String(cat.id)}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="assign-note">السبب (إلزامي)</Label>
-            <Textarea
-              id="assign-note"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="سبب تعيين أو تغيير الفئة..."
-              required
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
-            </Button>
-            <Button type="submit" disabled={submitting || !categoryId || !note.trim()}>
-              {submitting && <LoaderCircle className="animate-spin" />}
-              حفظ
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// --- Category History Dialog ---
-
-function CategoryHistoryDialog({
-  beneficiaryId,
-  open,
-  onOpenChange,
-}: {
-  beneficiaryId: number
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  const [history, setHistory] = React.useState<CategoryHistoryEntry[]>([])
-  const [loading, setLoading] = React.useState(false)
-
-  React.useEffect(() => {
-    if (!open) return
-    setLoading(true)
-    beneficiariesApi
-      .getCategoryHistory(beneficiaryId)
-      .then((res) => setHistory(res.history))
-      .catch((err) => {
-        if (err instanceof ApiError) toast.error(err.message)
-      })
-      .finally(() => setLoading(false))
-  }, [open, beneficiaryId])
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>سجل تغيير الفئة</DialogTitle>
-          <DialogDescription>جميع التغييرات على فئة المستفيد</DialogDescription>
-        </DialogHeader>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <LoaderCircle className="size-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : history.length === 0 ? (
-          <p className="py-4 text-center text-sm text-muted-foreground">
-            لا يوجد سجل تغييرات
-          </p>
-        ) : (
-          <div className="max-h-[50vh] space-y-3 overflow-y-auto">
-            {history.map((entry) => (
-              <div key={entry.id} className="rounded-lg border p-3">
-                <div className="flex items-center gap-2 text-sm">
-                  {entry.previousCategory ? (
-                    <>
-                      <Badge
-                        variant="outline"
-                        style={{
-                          borderColor: entry.previousCategory.color,
-                          color: entry.previousCategory.color,
-                        }}
-                      >
-                        {entry.previousCategory.name}
-                      </Badge>
-                      <span className="text-muted-foreground"></span>
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">بدون فئة </span>
-                  )}
-                  <Badge
-                    variant="outline"
-                    style={{
-                      borderColor: entry.category.color,
-                      color: entry.category.color,
-                    }}
-                  >
-                    {entry.category.name}
-                  </Badge>
-                </div>
-                <p className="mt-1 text-sm">{entry.note}</p>
-                <div className="mt-1 flex gap-4 text-xs text-muted-foreground">
-                  <span>بواسطة: {entry.assignedBy.name}</span>
-                  <span>
-                    {formatDate(entry.createdAt)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+    <div className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${isEditing ? "border-primary bg-primary/5" : canEdit ? "cursor-pointer hover:bg-muted/30" : ""}`}>
+      <button
+        type="button"
+        className="flex flex-1 items-center gap-3 text-start"
+        onClick={() => canEdit && onEdit()}
+        disabled={!canEdit}
+      >
+        <span className="text-sm font-medium flex-1">{dep.name || "—"}</span>
+        {dep.relationship && (
+          <Badge variant="outline" className="text-xs">
+            {dep.relationship === "other" ? dep.relationshipOther || "أخرى" : RELATIONSHIP_LABELS[dep.relationship]}
+          </Badge>
         )}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// --- Dependent Form Section (inline) ---
-
-function DependentFormSection({
-  beneficiaryId,
-  dependent,
-  onCancel,
-  onSuccess,
-}: {
-  beneficiaryId: number
-  dependent?: Dependent | null
-  onCancel: () => void
-  onSuccess: () => void
-}) {
-  const isEdit = !!dependent
-  const [name, setName] = React.useState("")
-  const [nationalId, setNationalId] = React.useState("")
-  const [gender, setGender] = React.useState("")
-  const [dateOfBirth, setDateOfBirth] = React.useState("")
-  const [relationship, setRelationship] = React.useState("")
-  const [relationshipOther, setRelationshipOther] = React.useState("")
-  const [dependentMaritalStatus, setDependentMaritalStatus] = React.useState("")
-  const [schoolName, setSchoolName] = React.useState("")
-  const [schoolGrade, setSchoolGrade] = React.useState("")
-  const [schoolType, setSchoolType] = React.useState("")
-  const [schoolTypeOther, setSchoolTypeOther] = React.useState("")
-  const [academicGrade, setAcademicGrade] = React.useState("")
-  const [weaknessSubjects, setWeaknessSubjects] = React.useState("")
-  const [educationStatus, setEducationStatus] = React.useState("")
-  const [healthCondition, setHealthCondition] = React.useState("")
-  const [healthStatus, setHealthStatus] = React.useState("")
-  const [notes, setNotes] = React.useState("")
-  const [religious, setReligious] = React.useState<DependentReligious>({})
-  const [submitting, setSubmitting] = React.useState(false)
-
-  React.useEffect(() => {
-    if (dependent) {
-      setName(dependent.name || "")
-      setNationalId(dependent.nationalId || "")
-      setGender(dependent.gender || "")
-      setDateOfBirth(dependent.dateOfBirth || "")
-      setRelationship(dependent.relationship || "")
-      setRelationshipOther(dependent.relationshipOther || "")
-      setDependentMaritalStatus(dependent.dependentMaritalStatus || "")
-      setSchoolName(dependent.schoolName || "")
-      setSchoolGrade(dependent.schoolGrade || "")
-      setSchoolType(dependent.schoolType || "")
-      setSchoolTypeOther(dependent.schoolTypeOther || "")
-      setAcademicGrade(dependent.academicGrade || "")
-      setWeaknessSubjects(dependent.weaknessSubjects || "")
-      setEducationStatus(dependent.educationStatus || "")
-      setHealthCondition(dependent.healthCondition || "")
-      setHealthStatus(dependent.healthStatus || "")
-      setNotes(dependent.notes || "")
-      setReligious(initDependentReligious(dependent.religious))
-    } else {
-      setName("")
-      setNationalId("")
-      setGender("")
-      setDateOfBirth("")
-      setRelationship("")
-      setRelationshipOther("")
-      setDependentMaritalStatus("")
-      setSchoolName("")
-      setSchoolGrade("")
-      setSchoolType("")
-      setSchoolTypeOther("")
-      setAcademicGrade("")
-      setWeaknessSubjects("")
-      setEducationStatus("")
-      setHealthCondition("")
-      setHealthStatus("")
-      setNotes("")
-      setReligious(initDependentReligious(null))
-    }
-  }, [dependent])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSubmitting(true)
-    try {
-      const data = {
-        name: name || undefined,
-        nationalId: nationalId || undefined,
-        gender: (gender as "male" | "female") || undefined,
-        dateOfBirth: dateOfBirth || undefined,
-        relationship: (relationship as "son" | "daughter" | "other") || undefined,
-        relationshipOther: relationship === "other" ? relationshipOther || undefined : undefined,
-        dependentMaritalStatus: dependentMaritalStatus || undefined,
-        schoolName: schoolName || undefined,
-        schoolGrade: schoolGrade || undefined,
-        schoolType: (schoolType as "public" | "private" | "other") || undefined,
-        schoolTypeOther: schoolType === "other" ? schoolTypeOther || undefined : undefined,
-        academicGrade: academicGrade || undefined,
-        weaknessSubjects: weaknessSubjects || undefined,
-        educationStatus:
-          (educationStatus as "enrolled" | "graduated" | "dropped_out" | "not_enrolled") || undefined,
-        healthCondition: (healthCondition as "healthy" | "unhealthy") || undefined,
-        healthStatus: healthCondition === "unhealthy" ? healthStatus || undefined : undefined,
-        religious: religious,
-        notes: notes || undefined,
-      }
-      if (isEdit && dependent) {
-        await dependentsApi.updateDependent(beneficiaryId, dependent.id, data)
-        toast.success("تم تحديث التابع بنجاح")
-      } else {
-        await dependentsApi.createDependent(beneficiaryId, data)
-        toast.success("تم إضافة التابع بنجاح")
-      }
-      onSuccess()
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "حدث خطأ غير متوقع")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <div className="mb-6 rounded-lg border bg-muted/30 p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-semibold">
-          {isEdit ? "تعديل التابع" : "إضافة تابع جديد"}
-        </h3>
-        <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          إلغاء
-        </Button>
-      </div>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex flex-col gap-1.5 sm:col-span-2 lg:col-span-3">
-            <Label htmlFor="dep-name">الاسم</Label>
-            <Input id="dep-name" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-nid">رقم الهوية</Label>
-            <Input id="dep-nid" dir="ltr" className="text-start" value={nationalId} onChange={(e) => setNationalId(e.target.value)} maxLength={10} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>الجنس</Label>
-            <Select value={gender} onValueChange={setGender}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="male">ذكر</SelectItem>
-                <SelectItem value="female">أنثى</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-dob">تاريخ الميلاد</Label>
-            <Input id="dep-dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>صلة القرابة</Label>
-            <Select value={relationship} onValueChange={setRelationship}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(RELATIONSHIP_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {relationship === "other" && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="dep-rel-other">صلة القرابة (أخرى)</Label>
-              <Input id="dep-rel-other" value={relationshipOther} onChange={(e) => setRelationshipOther(e.target.value)} />
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-marital">الحالة الاجتماعية</Label>
-            <Input id="dep-marital" value={dependentMaritalStatus} onChange={(e) => setDependentMaritalStatus(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>الحالة التعليمية</Label>
-            <Select value={educationStatus} onValueChange={setEducationStatus}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(EDUCATION_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-school">اسم المدرسة</Label>
-            <Input id="dep-school" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-grade">الصف الدراسي</Label>
-            <Input id="dep-grade" value={schoolGrade} onChange={(e) => setSchoolGrade(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>نوع المدرسة</Label>
-            <Select value={schoolType} onValueChange={setSchoolType}>
-              <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(SCHOOL_TYPE_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {schoolType === "other" && (
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="dep-school-other">نوع المدرسة (أخرى)</Label>
-              <Input id="dep-school-other" value={schoolTypeOther} onChange={(e) => setSchoolTypeOther(e.target.value)} />
-            </div>
-          )}
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-academic">التقدير الدراسي</Label>
-            <Input id="dep-academic" value={academicGrade} onChange={(e) => setAcademicGrade(e.target.value)} />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-weakness">مواد الضعف</Label>
-            <Textarea id="dep-weakness" value={weaknessSubjects} onChange={(e) => setWeaknessSubjects(e.target.value)} />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-notes">ملاحظات</Label>
-            <Textarea id="dep-notes" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <Switch
-            checked={healthCondition === "unhealthy"}
-            onCheckedChange={(checked) => {
-              setHealthCondition(checked ? "unhealthy" : "healthy")
-              if (!checked) setHealthStatus("")
-            }}
-          />
-          <Label>هل يعاني من مشاكل صحية؟</Label>
-        </div>
-        {healthCondition === "unhealthy" && (
-          <div className="flex flex-col gap-1.5">
-            <Label>تفاصيل الحالة الصحية</Label>
-            <Textarea value={healthStatus} onChange={(e) => setHealthStatus(e.target.value)} />
-          </div>
+        {dep.gender && (
+          <Badge variant="secondary" className="text-xs">{GENDER_LABELS[dep.gender]}</Badge>
         )}
-
-        {/* Dependent Religious Visits */}
-        <div className="rounded-lg border p-3">
-          <h4 className="mb-3 text-sm font-medium">الزيارات الدينية</h4>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {DEP_RELIGIOUS_KEYS.map(({ key, label }) => {
-              const item = religious[key] ?? defaultDependentReligiousItem()
-              return (
-                <div key={key} className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={item.done}
-                      onCheckedChange={(checked) =>
-                        setReligious((prev) => {
-                          const updated = { ...prev[key], done: checked }
-                          if (!checked) {
-                            delete updated.visitDate
-                          }
-                          return { ...prev, [key]: updated }
-                        })
-                      }
-                    />
-                    <span className="text-sm">{label}</span>
-                  </div>
-                  {item.done && (
-                    <div className="flex flex-col gap-1 pr-11">
-                      <Label className="text-xs">تاريخ الزيارة</Label>
-                      <Input
-                        type="date"
-                        value={item.visitDate ?? ""}
-                        onChange={(e) =>
-                          setReligious((prev) => ({
-                            ...prev,
-                            [key]: { ...prev[key], visitDate: e.target.value || undefined },
-                          }))
-                        }
-                      />
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <Button type="submit" disabled={submitting}>
-            {submitting && <LoaderCircle className="animate-spin" />}
-            {isEdit ? "حفظ" : "إضافة"}
+        {dep.age != null && (
+          <span className="text-xs text-muted-foreground">{dep.age} سنة</span>
+        )}
+      </button>
+      {canEdit && (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onEdit}
+            title="تعديل"
+          >
+            <Pencil className="size-4" />
           </Button>
-          <Button type="button" variant="outline" onClick={onCancel}>
-            إلغاء
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="text-destructive"
+            onClick={onDelete}
+            title="حذف"
+          >
+            <Trash2 className="size-4" />
           </Button>
         </div>
-      </form>
+      )}
     </div>
-  )
-}
-
-// --- Upload Document Dialog ---
-
-function UploadDocumentDialog({
-  beneficiaryId,
-  documentTypes,
-  open,
-  onOpenChange,
-  onSuccess,
-}: {
-  beneficiaryId: number
-  documentTypes: DocumentType[]
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  onSuccess: () => void
-}) {
-  const [file, setFile] = React.useState<File | null>(null)
-  const [docType, setDocType] = React.useState("")
-  const [notes, setNotes] = React.useState("")
-  const [submitting, setSubmitting] = React.useState(false)
-  const fileRef = React.useRef<HTMLInputElement>(null)
-
-  React.useEffect(() => {
-    if (open) {
-      setFile(null)
-      setDocType("")
-      setNotes("")
-      if (fileRef.current) fileRef.current.value = ""
-    }
-  }, [open])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!file || !docType) return
-    setSubmitting(true)
-    try {
-      await beneficiariesApi.uploadDocument(
-        beneficiaryId,
-        file,
-        docType,
-        notes || undefined
-      )
-      toast.success("تم رفع المستند بنجاح")
-      onOpenChange(false)
-      onSuccess()
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "حدث خطأ في رفع المستند")
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>رفع مستند</DialogTitle>
-          <DialogDescription>
-            ارفع مستند جديد (PDF أو صور فقط، الحد الأقصى 10 ميجابايت)
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <Label>نوع المستند</Label>
-            <Select value={docType} onValueChange={setDocType}>
-              <SelectTrigger>
-                <SelectValue placeholder="اختر نوع المستند" />
-              </SelectTrigger>
-              <SelectContent>
-                {documentTypes.map((t) => (
-                  <SelectItem key={t.key} value={t.key}>
-                    {t.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>الملف</Label>
-            <Input
-              ref={fileRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png,.webp"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="doc-notes">ملاحظات (اختياري)</Label>
-            <Input
-              id="doc-notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              إلغاء
-            </Button>
-            <Button type="submit" disabled={submitting || !file || !docType}>
-              {submitting && <LoaderCircle className="animate-spin" />}
-              رفع
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   )
 }
