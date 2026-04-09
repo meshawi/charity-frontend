@@ -1,7 +1,6 @@
 import * as React from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import * as beneficiariesApi from "@/lib/beneficiaries-api"
-import { getAcknowledgmentUrl } from "@/lib/disbursements-api"
 import type {
   Beneficiary,
   BeneficiaryDisbursement,
@@ -11,7 +10,6 @@ import type {
 import { GENDER_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { formatDate } from "@/lib/date-utils"
 import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -22,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { LoaderCircle, ArrowRight, Printer } from "lucide-react"
+import { LoaderCircle } from "lucide-react"
 import { ViewField } from "@/components/beneficiary/field"
 import {
   MARITAL_LABELS,
@@ -44,7 +42,6 @@ import {
 
 export default function BeneficiaryReportPage() {
   const { id } = useParams<{ id: string }>()
-  const navigate = useNavigate()
   const [beneficiary, setBeneficiary] = React.useState<Beneficiary | null>(null)
   const [loading, setLoading] = React.useState(true)
 

@@ -10,6 +10,7 @@ import type {
   BeneficiaryDisbursement,
   Dependent,
   DocumentType,
+  FurnitureAppliances,
   ProgressResponse,
   SubmitReviewErrorDetails,
 } from "@/types/beneficiaries"
@@ -91,7 +92,6 @@ import {
   CONDITION_KEYS,
   INCOME_KEYS,
   OBLIGATION_KEYS,
-  RELIGIOUS_KEYS,
   calculateAge,
   initFurniture,
   initIncome,
@@ -163,7 +163,7 @@ export default function BeneficiaryDetailPage() {
   })
 
   const [husbandReligious, setHusbandReligious] = React.useState<Record<string, { done: boolean; visitDate?: string }>>({})
-  const [furniture, setFurniture] = React.useState<Record<string, Record<string, unknown>>>({})
+  const [furniture, setFurniture] = React.useState<FurnitureAppliances>({})
   const [income, setIncome] = React.useState<Record<string, { monthly: number; notes: string }>>({})
   const [obligations, setObligations] = React.useState<Record<string, { monthly: number; notes: string }>>({})
   const [rentDeduction, setRentDeduction] = React.useState(0)
