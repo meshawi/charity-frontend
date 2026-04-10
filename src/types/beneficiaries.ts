@@ -104,6 +104,7 @@ export type Dependent = {
   healthStatus: string | null
   religious: DependentReligious | null
   notes: string | null
+  customFields: Record<string, unknown>
   createdAt: string
   updatedAt: string
 }
@@ -169,6 +170,7 @@ export type Beneficiary = {
   origin: string | null
   familySkillsTalents: string | null
   researcherNotes: string | null
+  customFields: Record<string, unknown>
   status: BeneficiaryStatus
   returnNote: string | null
   createdAt: string
@@ -227,6 +229,7 @@ export type CreateBeneficiaryRequest = {
   origin?: string | null
   familySkillsTalents?: string | null
   researcherNotes?: string | null
+  customFields?: Record<string, unknown>
 }
 
 export type UpdateBeneficiaryRequest = Partial<CreateBeneficiaryRequest>
@@ -310,6 +313,7 @@ export type CreateDependentRequest = {
   healthStatus?: string
   religious?: DependentReligious
   notes?: string
+  customFields?: Record<string, unknown>
 }
 
 export type UpdateDependentRequest = Partial<CreateDependentRequest>
@@ -333,12 +337,13 @@ export type SubmitReviewResponse = {
 }
 
 export type SubmitReviewErrorDetails = {
-  beneficiaryMissing: { fieldName: string; fieldLabel: string }[]
+  beneficiaryMissing: { fieldName: string; fieldLabel: string; isCustom?: boolean }[]
   dependentMissing: {
     dependentId: number
     dependentName: string
     fieldName: string
     fieldLabel: string
+    isCustom?: boolean
   }[]
 }
 

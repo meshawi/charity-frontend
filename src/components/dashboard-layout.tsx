@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   ClipboardCheck,
   Settings,
+  FileSignature,
+  ScrollText,
 } from "lucide-react"
 
 type NavItem = {
@@ -78,6 +80,18 @@ const navItems: NavItem[] = [
     label: "التقارير",
     icon: <FileSpreadsheet className="size-4" />,
     permission: "view_reports",
+  },
+  {
+    to: "/pledge",
+    label: "إقرار وتعهد",
+    icon: <FileSignature className="size-4" />,
+    permission: "process_pledge",
+  },
+  {
+    to: "/pledges",
+    label: "سجل الإقرارات",
+    icon: <ScrollText className="size-4" />,
+    permission: "view_pledges",
   },
   {
     to: "/field-config",

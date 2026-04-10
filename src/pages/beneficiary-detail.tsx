@@ -80,6 +80,8 @@ import { AssignCategoryDialog } from "@/components/beneficiary/assign-category-d
 import { CategoryHistoryDialog } from "@/components/beneficiary/category-history-dialog"
 import { DependentFormSection } from "@/components/beneficiary/dependent-form-section"
 import { UploadDocumentDialog } from "@/components/beneficiary/upload-document-dialog"
+import * as fieldConfigApi from "@/lib/field-config-api"
+import type { FieldConfigItem } from "@/lib/field-config-api"
 import {
   MARITAL_LABELS,
   RELATIONSHIP_LABELS,
@@ -130,6 +132,11 @@ export default function BeneficiaryDetailPage() {
   const canEdit = auth.hasPermission("edit_profile")
   const canAssignCategory = auth.hasPermission("assign_category")
 
+  // Custom fields
+  const [customFieldConfigs, setCustomFieldConfigs] = React.useState<FieldConfigItem[]>([])
+  const [depCustomFieldConfigs, setDepCustomFieldConfigs] = React.useState<FieldConfigItem[]>([])
+  const [customFields, setCustomFields] = React.useState<Record<string, unknown>>({})
+
   // --- Form state ---
   const [form, setForm] = React.useState({
     name: "",
@@ -179,12 +186,23 @@ export default function BeneficiaryDetailPage() {
       setCategories(cRes.categories)
       const b = bRes.beneficiary
 
-      const [progressRes, docTypesRes] = await Promise.all([
+      const [progressRes, docTypesRes, cfgRes, depCfgRes] = await Promise.all([
         beneficiariesApi.getProgress(Number(id)).catch(() => null),
         beneficiariesApi.getDocumentTypes(Number(id)).catch(() => null),
+        fieldConfigApi.getFieldConfig("beneficiary").catch(() => null),
+        fieldConfigApi.getFieldConfig("dependent").catch(() => null),
       ])
       if (progressRes) setProgress(progressRes)
       if (docTypesRes) setDocumentTypes(docTypesRes.types)
+      if (cfgRes) {
+        const active = cfgRes.configs.filter((c) => c.isCustom && c.isActive)
+        setCustomFieldConfigs(active)
+      }
+      if (depCfgRes) {
+        const active = depCfgRes.configs.filter((c) => c.isCustom && c.isActive)
+        setDepCustomFieldConfigs(active)
+      }
+      setCustomFields(b.customFields ?? {})
 
       setForm({
         name: b.name || "",
@@ -275,6 +293,7 @@ export default function BeneficiaryDetailPage() {
         origin: strOrNull(form.origin),
         familySkillsTalents: strOrNull(form.familySkillsTalents),
         researcherNotes: strOrNull(form.researcherNotes),
+        customFields: customFields,
       })
       toast.success("تم حفظ البيانات بنجاح")
       loadData()
@@ -944,6 +963,83 @@ export default function BeneficiaryDetailPage() {
         </div>
       </section>
 
+      {/* === Custom Fields === */}
+      {customFieldConfigs.length > 0 && (
+        <>
+          <Separator />
+          <section className="my-6">
+            <h2 className="mb-3 text-sm font-medium text-muted-foreground">
+              حقول مخصصة
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {customFieldConfigs.map((cfg) => (
+                <Field key={cfg.fieldName} label={cfg.fieldLabel}>
+                  {cfg.fieldType === "text" && (
+                    <Input
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  )}
+                  {cfg.fieldType === "number" && (
+                    <Input
+                      type="number"
+                      value={(customFields[cfg.fieldName] as number) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({
+                          ...prev,
+                          [cfg.fieldName]: e.target.value ? Number(e.target.value) : "",
+                        }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  )}
+                  {cfg.fieldType === "date" && (
+                    <Input
+                      type="date"
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      }
+                      disabled={!canEdit}
+                    />
+                  )}
+                  {cfg.fieldType === "select" && (
+                    <Select
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onValueChange={(v) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
+                      }
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectContent>
+                        {cfg.options?.map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {cfg.fieldType === "boolean" && (
+                    <div className="flex items-center pt-1">
+                      <Switch
+                        checked={!!customFields[cfg.fieldName]}
+                        onCheckedChange={(v) =>
+                          setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
+                        }
+                        disabled={!canEdit}
+                      />
+                    </div>
+                  )}
+                </Field>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
       </>)}
 
       {activeTab === "dependents" && (<>
@@ -967,6 +1063,7 @@ export default function BeneficiaryDetailPage() {
             key={editDep?.id ?? "new"}
             beneficiaryId={beneficiary.id}
             dependent={editDep}
+            customFieldConfigs={depCustomFieldConfigs}
             onCancel={() => { setCreateDepOpen(false); setEditDep(null) }}
             onSuccess={() => { setCreateDepOpen(false); setEditDep(null); loadData() }}
           />

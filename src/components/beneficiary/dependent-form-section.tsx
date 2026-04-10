@@ -1,6 +1,7 @@
 import * as React from "react"
 import * as dependentsApi from "@/lib/dependents-api"
 import type { Dependent, DependentReligious } from "@/types/beneficiaries"
+import type { FieldConfigItem } from "@/lib/field-config-api"
 import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -28,11 +29,13 @@ import {
 export function DependentFormSection({
   beneficiaryId,
   dependent,
+  customFieldConfigs = [],
   onCancel,
   onSuccess,
 }: {
   beneficiaryId: number
   dependent?: Dependent | null
+  customFieldConfigs?: FieldConfigItem[]
   onCancel: () => void
   onSuccess: () => void
 }) {
@@ -55,6 +58,7 @@ export function DependentFormSection({
   const [healthStatus, setHealthStatus] = React.useState(dependent?.healthStatus || "")
   const [notes, setNotes] = React.useState(dependent?.notes || "")
   const [religious, setReligious] = React.useState<DependentReligious>(initDependentReligious(dependent?.religious ?? null))
+  const [customFields, setCustomFields] = React.useState<Record<string, unknown>>(dependent?.customFields ?? {})
   const [submitting, setSubmitting] = React.useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
@@ -81,6 +85,7 @@ export function DependentFormSection({
         healthStatus: healthCondition === "unhealthy" ? healthStatus || undefined : undefined,
         religious: religious,
         notes: notes || undefined,
+        customFields: customFields,
       }
       if (isEdit && dependent) {
         await dependentsApi.updateDependent(beneficiaryId, dependent.id, data)
@@ -263,6 +268,74 @@ export function DependentFormSection({
             })}
           </div>
         </div>
+
+        {/* Custom Fields */}
+        {customFieldConfigs.length > 0 && (
+          <div className="rounded-lg border p-3">
+            <h4 className="mb-3 text-sm font-medium">حقول مخصصة</h4>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {customFieldConfigs.map((cfg) => (
+                <div key={cfg.fieldName} className="flex flex-col gap-1.5">
+                  <Label>{cfg.fieldLabel}</Label>
+                  {cfg.fieldType === "text" && (
+                    <Input
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      }
+                    />
+                  )}
+                  {cfg.fieldType === "number" && (
+                    <Input
+                      type="number"
+                      value={(customFields[cfg.fieldName] as number) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({
+                          ...prev,
+                          [cfg.fieldName]: e.target.value ? Number(e.target.value) : "",
+                        }))
+                      }
+                    />
+                  )}
+                  {cfg.fieldType === "date" && (
+                    <Input
+                      type="date"
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onChange={(e) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      }
+                    />
+                  )}
+                  {cfg.fieldType === "select" && (
+                    <Select
+                      value={(customFields[cfg.fieldName] as string) ?? ""}
+                      onValueChange={(v) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
+                      }
+                    >
+                      <SelectTrigger><SelectValue placeholder="اختر" /></SelectTrigger>
+                      <SelectContent>
+                        {cfg.options?.map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {cfg.fieldType === "boolean" && (
+                    <div className="flex items-center pt-1">
+                      <Switch
+                        checked={!!customFields[cfg.fieldName]}
+                        onCheckedChange={(v) =>
+                          setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
+                        }
+                      />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <Button type="submit" disabled={submitting}>

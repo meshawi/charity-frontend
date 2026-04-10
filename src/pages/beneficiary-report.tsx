@@ -1,6 +1,8 @@
 import * as React from "react"
 import { useParams } from "react-router-dom"
 import * as beneficiariesApi from "@/lib/beneficiaries-api"
+import * as fieldConfigApi from "@/lib/field-config-api"
+import type { FieldConfigItem } from "@/lib/field-config-api"
 import type {
   Beneficiary,
   BeneficiaryDisbursement,
@@ -43,13 +45,22 @@ import {
 export default function BeneficiaryReportPage() {
   const { id } = useParams<{ id: string }>()
   const [beneficiary, setBeneficiary] = React.useState<Beneficiary | null>(null)
+  const [benCustomConfigs, setBenCustomConfigs] = React.useState<FieldConfigItem[]>([])
+  const [depCustomConfigs, setDepCustomConfigs] = React.useState<FieldConfigItem[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     if (!id) return
-    beneficiariesApi
-      .getBeneficiary(Number(id))
-      .then((res) => setBeneficiary(res.beneficiary))
+    Promise.all([
+      beneficiariesApi.getBeneficiary(Number(id)),
+      fieldConfigApi.getFieldConfig("beneficiary").catch(() => null),
+      fieldConfigApi.getFieldConfig("dependent").catch(() => null),
+    ])
+      .then(([bRes, benCfg, depCfg]) => {
+        setBeneficiary(bRes.beneficiary)
+        if (benCfg) setBenCustomConfigs(benCfg.configs.filter((c) => c.isCustom && c.isActive))
+        if (depCfg) setDepCustomConfigs(depCfg.configs.filter((c) => c.isCustom && c.isActive))
+      })
       .catch(() => toast.error("حدث خطأ في تحميل بيانات المستفيد"))
       .finally(() => setLoading(false))
   }, [id])
@@ -301,12 +312,30 @@ export default function BeneficiaryReportPage() {
         </div>
       </ReportSection>
 
+      {/* === Beneficiary Custom Fields === */}
+      {benCustomConfigs.length > 0 && (
+        <ReportSection title="حقول مخصصة">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {benCustomConfigs.map((cfg) => {
+              const raw = beneficiary.customFields?.[cfg.fieldName]
+              let display: string | null = null
+              if (raw != null && raw !== "") {
+                if (cfg.fieldType === "boolean") display = raw ? "نعم" : "لا"
+                else if (cfg.fieldType === "date" && typeof raw === "string") display = formatDate(raw)
+                else display = String(raw)
+              }
+              return <ViewField key={cfg.id} label={cfg.fieldLabel} value={display} />
+            })}
+          </div>
+        </ReportSection>
+      )}
+
       {/* === Dependents === */}
       {beneficiary.dependents.length > 0 && (
         <ReportSection title={`التابعين (${beneficiary.dependents.length})`}>
           <div className="space-y-4">
             {beneficiary.dependents.map((dep, idx) => (
-              <DependentReport key={dep.id} dep={dep} index={idx + 1} />
+              <DependentReport key={dep.id} dep={dep} index={idx + 1} customConfigs={depCustomConfigs} />
             ))}
           </div>
         </ReportSection>
@@ -391,7 +420,7 @@ function ReportSection({ title, children }: { title: string; children: React.Rea
   )
 }
 
-function DependentReport({ dep, index }: { dep: Dependent; index: number }) {
+function DependentReport({ dep, index, customConfigs }: { dep: Dependent; index: number; customConfigs: FieldConfigItem[] }) {
   return (
     <div className="rounded-lg border p-4">
       <div className="mb-3 flex items-center gap-2">
@@ -467,6 +496,24 @@ function DependentReport({ dep, index }: { dep: Dependent; index: number }) {
         <>
           <Separator className="my-3" />
           <ViewField label="ملاحظات" value={dep.notes} />
+        </>
+      )}
+
+      {customConfigs.length > 0 && (Object.keys(dep.customFields ?? {}).length > 0) && (
+        <>
+          <Separator className="my-3" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {customConfigs.map((cfg) => {
+              const raw = dep.customFields?.[cfg.fieldName]
+              let display: string | null = null
+              if (raw != null && raw !== "") {
+                if (cfg.fieldType === "boolean") display = raw ? "نعم" : "لا"
+                else if (cfg.fieldType === "date" && typeof raw === "string") display = formatDate(raw)
+                else display = String(raw)
+              }
+              return <ViewField key={cfg.id} label={cfg.fieldLabel} value={display} />
+            })}
+          </div>
         </>
       )}
     </div>

@@ -16,6 +16,8 @@ import RolesPage from "@/pages/roles"
 import ReviewQueuePage from "@/pages/review-queue"
 import ProgramRecipientsPage from "@/pages/program-recipients"
 import FieldConfigPage from "@/pages/field-config"
+import PledgeProcessPage from "@/pages/pledge-process"
+import PledgesPage from "@/pages/pledges"
 
 export default function App() {
   return (
@@ -52,6 +54,8 @@ export default function App() {
           />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/field-config" element={<FieldConfigPage />} />
+          <Route path="/pledge" element={<PledgeProcessPage />} />
+          <Route path="/pledges" element={<PledgesPage />} />
         </Route>
       </Route>
     </Routes>
