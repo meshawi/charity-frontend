@@ -370,8 +370,7 @@ function RoleFormSection({
               <div key={group.key} className="rounded-lg border bg-card">
                 <div className="flex items-center gap-2 border-b px-4 py-2.5">
                   <Checkbox
-                    checked={allSelected}
-                    indeterminate={someSelected}
+                    checked={allSelected ? true : someSelected ? "indeterminate" : false}
                     onCheckedChange={() => toggleGroup(group.permissions)}
                   />
                   <span className="text-sm font-medium">{group.label}</span>
