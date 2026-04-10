@@ -44,6 +44,8 @@ export default function PledgeProcessPage() {
 
   const [submitting, setSubmitting] = React.useState(false)
   const [newPledgeId, setNewPledgeId] = React.useState<number | null>(null)
+  const [currentYear, setCurrentYear] = React.useState<number | null>(null)
+  const [newPledgeYear, setNewPledgeYear] = React.useState<number | null>(null)
 
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
   const signaturePadRef = React.useRef<SignaturePad | null>(null)
@@ -86,6 +88,7 @@ export default function PledgeProcessPage() {
         return
       }
       setBeneficiary(res.beneficiary)
+      if (res.currentYear) setCurrentYear(res.currentYear)
       if (res.alreadySigned && res.pledge) {
         setExistingPledgeId(res.pledge.id)
         setStep("already-signed")
@@ -115,6 +118,7 @@ export default function PledgeProcessPage() {
         signature,
       })
       setNewPledgeId(res.pledge.id)
+      setNewPledgeYear(res.pledge.pledgeYear)
       setStep("success")
       toast.success("تم توقيع الإقرار بنجاح")
     } catch (err) {
@@ -137,6 +141,8 @@ export default function PledgeProcessPage() {
     setPledgeText("")
     setExistingPledgeId(null)
     setNewPledgeId(null)
+    setCurrentYear(null)
+    setNewPledgeYear(null)
     signaturePadRef.current = null
   }
 
@@ -155,7 +161,9 @@ export default function PledgeProcessPage() {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-lg font-medium">إقرار وتعهد</h1>
+        <h1 className="text-lg font-medium">
+          إقرار وتعهد{currentYear ? ` - ${currentYear}` : ""}
+        </h1>
         <p className="text-sm text-muted-foreground">
           توقيع الإقرار والتعهد للمستفيدين
         </p>
@@ -333,7 +341,7 @@ export default function PledgeProcessPage() {
                 <div>
                   <h3 className="text-lg font-medium">تم التوقيع بنجاح</h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    تم تسجيل الإقرار وإنشاء المستند
+                    تم تسجيل إقرار{newPledgeYear ? ` ${newPledgeYear}` : ""} وإنشاء المستند
                   </p>
                 </div>
                 <div className="flex gap-2">

@@ -73,7 +73,10 @@ export default function ProgramsPage() {
   const loadData = React.useCallback(async () => {
     try {
       const [programsRes, categoriesRes] = await Promise.all([
-        programsApi.getPrograms(),
+        programsApi.getPrograms().catch((err) => {
+          if (err instanceof ApiError && err.status === 403) return { programs: [] as Program[] }
+          throw err
+        }),
         categoriesApi.getCategories(),
       ])
       setPrograms(programsRes.programs)

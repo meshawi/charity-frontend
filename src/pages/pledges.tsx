@@ -22,6 +22,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   LoaderCircle,
   Search,
   MoreHorizontal,
@@ -44,6 +51,9 @@ export default function PledgesPage() {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState("")
   const [page, setPage] = React.useState(1)
+  const [yearFilter, setYearFilter] = React.useState<string>(
+    String(new Date().getFullYear())
+  )
 
   const loadData = React.useCallback(async () => {
     try {
@@ -51,6 +61,7 @@ export default function PledgesPage() {
         search: search || undefined,
         page,
         limit: 20,
+        year: yearFilter === "all" ? undefined : Number(yearFilter),
       })
       setPledges(res.pledges)
       setPagination(res.pagination)
@@ -59,7 +70,7 @@ export default function PledgesPage() {
     } finally {
       setLoading(false)
     }
-  }, [search, page])
+  }, [search, page, yearFilter])
 
   React.useEffect(() => {
     if (!canView) return
@@ -68,7 +79,7 @@ export default function PledgesPage() {
 
   React.useEffect(() => {
     setPage(1)
-  }, [search])
+  }, [search, yearFilter])
 
   if (!canView) {
     return (
@@ -95,9 +106,9 @@ export default function PledgesPage() {
         </p>
       </div>
 
-      {/* Search */}
-      <div className="mb-4">
-        <div className="relative max-w-md">
+      {/* Search & Year Filter */}
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="relative max-w-md flex-1">
           <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
@@ -106,6 +117,22 @@ export default function PledgesPage() {
             className="ps-9"
           />
         </div>
+        <Select value={yearFilter} onValueChange={setYearFilter}>
+          <SelectTrigger className="w-32">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">الكل</SelectItem>
+            {Array.from({ length: 5 }, (_, i) => {
+              const y = new Date().getFullYear() - i
+              return (
+                <SelectItem key={y} value={String(y)}>
+                  {y}
+                </SelectItem>
+              )
+            })}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Table */}
@@ -115,6 +142,7 @@ export default function PledgesPage() {
             <TableRow>
               <TableHead>المستفيد</TableHead>
               <TableHead>رقم الهوية</TableHead>
+              <TableHead>السنة</TableHead>
               <TableHead>تاريخ التوقيع</TableHead>
               <TableHead>الموظف</TableHead>
               <TableHead className="w-12" />
@@ -124,7 +152,7 @@ export default function PledgesPage() {
             {pledges.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="h-24 text-center text-muted-foreground"
                 >
                   لا توجد إقرارات
@@ -145,6 +173,9 @@ export default function PledgesPage() {
                   </TableCell>
                   <TableCell dir="ltr" className="text-start">
                     {p.beneficiary.nationalId}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {p.pledgeYear}
                   </TableCell>
                   <TableCell className="text-sm">
                     {formatDateTime(p.signedAt)}

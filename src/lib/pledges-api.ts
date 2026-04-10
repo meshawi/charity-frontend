@@ -25,11 +25,13 @@ export async function getPledges(params?: {
   search?: string
   page?: number
   limit?: number
+  year?: number
 }) {
   const searchParams = new URLSearchParams()
   if (params?.search) searchParams.set("search", params.search)
   if (params?.page) searchParams.set("page", String(params.page))
   if (params?.limit) searchParams.set("limit", String(params.limit))
+  if (params?.year) searchParams.set("year", String(params.year))
   const qs = searchParams.toString()
   return apiClient<PledgesListResponse>(`/pledges${qs ? `?${qs}` : ""}`)
 }

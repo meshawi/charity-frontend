@@ -8,16 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,9 +33,33 @@ import {
   Pencil,
   Trash2,
   ShieldCheck,
+  X,
 } from "lucide-react"
 
 const SUPER_ADMIN_ROLE_NAME = "مدير النظام"
+
+const PERMISSION_GROUP_LABELS: Record<string, string> = {
+  view: "عرض البيانات",
+  manage: "إدارة",
+  process: "معالجة",
+  assign: "تعيين",
+  approve: "اعتماد",
+}
+
+function groupPermissions(permissions: PermissionItem[]) {
+  const groups: Record<string, PermissionItem[]> = {}
+  for (const perm of permissions) {
+    const prefix = perm.name.split("_")[0]
+    const key = PERMISSION_GROUP_LABELS[prefix] ? prefix : "other"
+    if (!groups[key]) groups[key] = []
+    groups[key].push(perm)
+  }
+  return Object.entries(groups).map(([key, perms]) => ({
+    key,
+    label: PERMISSION_GROUP_LABELS[key] || "أخرى",
+    permissions: perms,
+  }))
+}
 
 export default function RolesPage() {
   const auth = useAuth()
@@ -53,9 +69,15 @@ export default function RolesPage() {
   const [allPermissions, setAllPermissions] = React.useState<PermissionItem[]>([])
   const [loading, setLoading] = React.useState(true)
 
-  const [createOpen, setCreateOpen] = React.useState(false)
-  const [editRole, setEditRole] = React.useState<RoleWithPermissions | null>(null)
-  const [deleteRole, setDeleteRole] = React.useState<RoleWithPermissions | null>(null)
+  const [formMode, setFormMode] = React.useState<"closed" | "create" | "edit">(
+    "closed"
+  )
+  const [editRole, setEditRole] = React.useState<RoleWithPermissions | null>(
+    null
+  )
+  const [deleteRole, setDeleteRole] = React.useState<RoleWithPermissions | null>(
+    null
+  )
 
   const loadData = React.useCallback(async () => {
     try {
@@ -75,6 +97,21 @@ export default function RolesPage() {
   React.useEffect(() => {
     loadData()
   }, [loadData])
+
+  function openCreate() {
+    setEditRole(null)
+    setFormMode("create")
+  }
+
+  function openEdit(role: RoleWithPermissions) {
+    setEditRole(role)
+    setFormMode("edit")
+  }
+
+  function closeForm() {
+    setFormMode("closed")
+    setEditRole(null)
+  }
 
   async function handleDelete() {
     if (!deleteRole) return
@@ -100,13 +137,29 @@ export default function RolesPage() {
     <div className="p-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-medium">إدارة الأدوار والصلاحيات</h1>
-        {canManage && (
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
+        {canManage && formMode === "closed" && (
+          <Button size="sm" onClick={openCreate}>
             <Plus className="size-4" />
             إضافة دور
           </Button>
         )}
       </div>
+
+      {/* Inline form */}
+      {formMode !== "closed" && (
+        <>
+          <RoleFormSection
+            role={editRole}
+            allPermissions={allPermissions}
+            onCancel={closeForm}
+            onSuccess={() => {
+              closeForm()
+              loadData()
+            }}
+          />
+          <Separator className="my-6" />
+        </>
+      )}
 
       <div className="space-y-4">
         {roles.map((role) => {
@@ -129,7 +182,7 @@ export default function RolesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditRole(role)}>
+                      <DropdownMenuItem onClick={() => openEdit(role)}>
                         <Pencil className="size-4" />
                         تعديل
                       </DropdownMenuItem>
@@ -175,21 +228,6 @@ export default function RolesPage() {
         )}
       </div>
 
-      <RoleFormDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        allPermissions={allPermissions}
-        onSuccess={loadData}
-      />
-
-      <RoleFormDialog
-        role={editRole}
-        open={!!editRole}
-        onOpenChange={(open) => !open && setEditRole(null)}
-        allPermissions={allPermissions}
-        onSuccess={loadData}
-      />
-
       <AlertDialog
         open={!!deleteRole}
         onOpenChange={(open) => !open && setDeleteRole(null)}
@@ -212,41 +250,46 @@ export default function RolesPage() {
   )
 }
 
-function RoleFormDialog({
+function RoleFormSection({
   role,
-  open,
-  onOpenChange,
   allPermissions,
+  onCancel,
   onSuccess,
 }: {
   role?: RoleWithPermissions | null
-  open: boolean
-  onOpenChange: (open: boolean) => void
   allPermissions: PermissionItem[]
+  onCancel: () => void
   onSuccess: () => void
 }) {
   const isEdit = !!role
-  const [name, setName] = React.useState("")
-  const [description, setDescription] = React.useState("")
-  const [selectedPermissions, setSelectedPermissions] = React.useState<number[]>([])
+  const [name, setName] = React.useState(role?.name || "")
+  const [description, setDescription] = React.useState(
+    role?.description || ""
+  )
+  const [selectedPermissions, setSelectedPermissions] = React.useState<
+    number[]
+  >(role?.Permissions.map((p) => p.id) || [])
   const [submitting, setSubmitting] = React.useState(false)
 
-  React.useEffect(() => {
-    if (role) {
-      setName(role.name)
-      setDescription(role.description || "")
-      setSelectedPermissions(role.Permissions.map((p) => p.id))
-    } else {
-      setName("")
-      setDescription("")
-      setSelectedPermissions([])
-    }
-  }, [role, open])
+  const groups = React.useMemo(
+    () => groupPermissions(allPermissions),
+    [allPermissions]
+  )
 
   function togglePermission(id: number) {
     setSelectedPermissions((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     )
+  }
+
+  function toggleGroup(groupPerms: PermissionItem[]) {
+    const ids = groupPerms.map((p) => p.id)
+    const allSelected = ids.every((id) => selectedPermissions.includes(id))
+    if (allSelected) {
+      setSelectedPermissions((prev) => prev.filter((id) => !ids.includes(id)))
+    } else {
+      setSelectedPermissions((prev) => [...new Set([...prev, ...ids])])
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -272,7 +315,6 @@ function RoleFormDialog({
         })
         toast.success("تم إنشاء الدور بنجاح")
       }
-      onOpenChange(false)
       onSuccess()
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : "حدث خطأ غير متوقع")
@@ -282,17 +324,18 @@ function RoleFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{isEdit ? "تعديل الدور" : "إضافة دور جديد"}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? `تعديل بيانات الدور "${role?.name}"`
-              : "قم بتعبئة البيانات لإنشاء دور جديد"}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <div className="rounded-lg border bg-muted/30 p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-base font-medium">
+          {isEdit ? `تعديل الدور "${role?.name}"` : "إضافة دور جديد"}
+        </h2>
+        <Button variant="ghost" size="icon-sm" onClick={onCancel}>
+          <X className="size-4" />
+        </Button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="role-name">اسم الدور</Label>
             <Input
@@ -304,57 +347,87 @@ function RoleFormDialog({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="role-desc">الوصف (اختياري)</Label>
-            <Textarea
+            <Input
               id="role-desc"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={2}
             />
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label>الصلاحيات</Label>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {allPermissions.map((perm) => (
-                <label
-                  key={perm.id}
-                  className="flex cursor-pointer items-center gap-2 rounded-md border p-2 hover:bg-muted/50"
-                >
+        </div>
+
+        <div className="space-y-3">
+          <Label>الصلاحيات</Label>
+          {groups.map((group) => {
+            const groupIds = group.permissions.map((p) => p.id)
+            const allSelected = groupIds.every((id) =>
+              selectedPermissions.includes(id)
+            )
+            const someSelected =
+              !allSelected &&
+              groupIds.some((id) => selectedPermissions.includes(id))
+
+            return (
+              <div key={group.key} className="rounded-lg border bg-card">
+                <div className="flex items-center gap-2 border-b px-4 py-2.5">
                   <Checkbox
-                    checked={selectedPermissions.includes(perm.id)}
-                    onCheckedChange={() => togglePermission(perm.id)}
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onCheckedChange={() => toggleGroup(group.permissions)}
                   />
-                  <div>
-                    <span className="text-sm">{perm.label || perm.name}</span>
-                    {perm.description && (
-                      <p className="text-xs text-muted-foreground">
-                        {perm.description}
-                      </p>
-                    )}
-                  </div>
-                </label>
-              ))}
-              {allPermissions.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  لا توجد صلاحيات متاحة
-                </p>
-              )}
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              إلغاء
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting && <LoaderCircle className="animate-spin" />}
-              {isEdit ? "حفظ" : "إنشاء"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+                  <span className="text-sm font-medium">{group.label}</span>
+                  <Badge variant="outline" className="mr-auto text-[10px]">
+                    {
+                      groupIds.filter((id) =>
+                        selectedPermissions.includes(id)
+                      ).length
+                    }
+                    /{groupIds.length}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-1 gap-1 p-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {group.permissions.map((perm) => (
+                    <label
+                      key={perm.id}
+                      className="flex cursor-pointer items-start gap-2 rounded-md p-2 hover:bg-muted/50"
+                    >
+                      <Checkbox
+                        checked={selectedPermissions.includes(perm.id)}
+                        onCheckedChange={() => togglePermission(perm.id)}
+                        className="mt-0.5"
+                      />
+                      <div>
+                        <span className="text-sm">
+                          {perm.label || perm.name}
+                        </span>
+                        {perm.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {perm.description}
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+          {allPermissions.length === 0 && (
+            <p className="text-sm text-muted-foreground">
+              لا توجد صلاحيات متاحة
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="submit" disabled={submitting}>
+            {submitting && <LoaderCircle className="animate-spin" />}
+            {isEdit ? "حفظ التعديلات" : "إنشاء الدور"}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            إلغاء
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

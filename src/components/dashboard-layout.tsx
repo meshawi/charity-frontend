@@ -131,6 +131,11 @@ export function DashboardLayout() {
   const user = auth.status === "authenticated" ? auth.user : null
   const hasDashboard = auth.hasPermission("view_dashboard")
 
+  const brandName =
+    import.meta.env.VITE_BRAND_NAME || "نظام إدارة الجمعية"
+  const devName = import.meta.env.VITE_DEV_NAME
+  const devUrl = import.meta.env.VITE_DEV_URL
+
   const homeItem: NavItem = hasDashboard
     ? {
         to: "/",
@@ -155,8 +160,16 @@ export function DashboardLayout() {
   return (
     <div className="flex min-h-svh">
       <aside className="sticky top-0 flex h-svh w-56 shrink-0 flex-col overflow-y-auto border-e bg-card">
-        <div className="p-4">
-          <h2 className="text-sm font-medium">نظام إدارة الجمعية</h2>
+        <div className="flex items-center gap-2.5 p-4">
+          <img
+            src="/brand.png"
+            alt=""
+            className="size-8 shrink-0 rounded object-contain"
+            onError={(e) => {
+              ;(e.currentTarget as HTMLImageElement).style.display = "none"
+            }}
+          />
+          <h2 className="text-sm font-medium leading-tight">{brandName}</h2>
         </div>
         <Separator />
         <nav className="flex flex-1 flex-col gap-1 p-2">
@@ -201,6 +214,23 @@ export function DashboardLayout() {
           ))}
         </nav>
         <Separator />
+        {devName && (
+          <div className="px-3 pt-2 text-center text-[10px] text-muted-foreground/60">
+           تم تطويره بواسطة{" "}
+            {devUrl ? (
+              <a
+                href={devUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-primary hover:underline"
+              >
+                {devName}
+              </a>
+            ) : (
+              <span className="font-medium">{devName}</span>
+            )}
+          </div>
+        )}
         <div className="flex items-center gap-2 p-3">
           <div className="flex-1 truncate text-sm">{user?.name}</div>
           <Button

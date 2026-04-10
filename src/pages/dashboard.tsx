@@ -152,7 +152,7 @@ export default function DashboardPage() {
               مرحباً {user?.name}
             </CardTitle>
             <CardDescription>
-              أهلاً بك في نظام إدارة الجمعية
+              أهلاً بك في {import.meta.env.VITE_BRAND_NAME || "نظام إدارة الجمعية"}
             </CardDescription>
           </CardHeader>
           <CardContent>

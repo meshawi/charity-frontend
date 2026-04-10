@@ -12,8 +12,10 @@ export type LookupResponse = {
   alreadySigned?: boolean
   message?: string
   beneficiary?: PledgeBeneficiary
+  currentYear?: number
   pledge?: {
     id: number
+    pledgeYear: number
     signedAt: string
   }
   pledgeText?: string
@@ -23,6 +25,7 @@ export type Pledge = {
   id: number
   beneficiaryId: number
   processedById: number
+  pledgeYear: number
   pledgeText: string
   pdfFile: string | null
   signedAt: string
@@ -39,6 +42,7 @@ export type PledgeListItem = {
   id: number
   beneficiaryId: number
   processedById: number
+  pledgeYear: number
   pledgeText: string
   pdfFile: string | null
   signedAt: string

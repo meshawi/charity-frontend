@@ -5,6 +5,7 @@ import * as programsApi from "@/lib/programs-api"
 import * as usersApi from "@/lib/users-api"
 import type { Program } from "@/types/programs"
 import type { AdminUser } from "@/types/users"
+import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -31,7 +32,10 @@ export default function ReportsPage() {
     async function load() {
       try {
         const [progsRes, usersRes] = await Promise.all([
-          programsApi.getPrograms(),
+          programsApi.getPrograms().catch((err) => {
+            if (err instanceof ApiError && err.status === 403) return { programs: [] as Program[] }
+            throw err
+          }),
           usersApi.getUsers(),
         ])
         setPrograms(progsRes.programs)
