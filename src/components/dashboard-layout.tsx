@@ -70,6 +70,7 @@ const navGroups: NavGroup[] = [
         to: "/categories",
         label: "التصنيفات",
         icon: <FolderTree className="size-4" />,
+        permission: "view_profiles",
       },
     ],
   },
@@ -80,6 +81,7 @@ const navGroups: NavGroup[] = [
         to: "/programs",
         label: "البرامج",
         icon: <BookOpen className="size-4" />,
+        permission: "manage_programs",
       },
       {
         to: "/disbursement",
