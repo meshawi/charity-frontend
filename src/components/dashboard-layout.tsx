@@ -28,76 +28,101 @@ type NavItem = {
   permission?: string
 }
 
-const navItems: NavItem[] = [
+type NavGroup = {
+  title: string
+  items: NavItem[]
+}
+
+const navGroups: NavGroup[] = [
   {
-    to: "/users",
-    label: "المستخدمين",
-    icon: <Users className="size-4" />,
-    permission: "view_users",
+    title: "الإدارة",
+    items: [
+      {
+        to: "/users",
+        label: "المستخدمين",
+        icon: <Users className="size-4" />,
+        permission: "view_users",
+      },
+      {
+        to: "/roles",
+        label: "الأدوار",
+        icon: <ShieldCheck className="size-4" />,
+        permission: "manage_roles",
+      },
+    ],
   },
   {
-    to: "/roles",
-    label: "الأدوار",
-    icon: <ShieldCheck className="size-4" />,
-    permission: "manage_roles",
+    title: "المستفيدين",
+    items: [
+      {
+        to: "/beneficiaries",
+        label: "المستفيدين",
+        icon: <UserRoundSearch className="size-4" />,
+        permission: "view_profiles",
+      },
+      {
+        to: "/review-queue",
+        label: "المراجعة",
+        icon: <ClipboardCheck className="size-4" />,
+        permission: "assign_category",
+      },
+      {
+        to: "/categories",
+        label: "التصنيفات",
+        icon: <FolderTree className="size-4" />,
+      },
+    ],
   },
   {
-    to: "/review-queue",
-    label: "المراجعة",
-    icon: <ClipboardCheck className="size-4" />,
-    permission: "assign_category",
+    title: "التوزيع والإقرارات",
+    items: [
+      {
+        to: "/programs",
+        label: "البرامج",
+        icon: <BookOpen className="size-4" />,
+      },
+      {
+        to: "/disbursement",
+        label: "التوزيع",
+        icon: <HandCoins className="size-4" />,
+        permission: "process_disbursement",
+      },
+      {
+        to: "/disbursements",
+        label: "سجل التوزيع",
+        icon: <ClipboardList className="size-4" />,
+        permission: "view_disbursements",
+      },
+      {
+        to: "/pledge",
+        label: "إقرار وتعهد",
+        icon: <FileSignature className="size-4" />,
+        permission: "process_pledge",
+      },
+      {
+        to: "/pledges",
+        label: "سجل الإقرارات",
+        icon: <ScrollText className="size-4" />,
+        permission: "view_pledges",
+      },
+    ],
   },
   {
-    to: "/categories",
-    label: "التصنيفات",
-    icon: <FolderTree className="size-4" />,
-  },
-  {
-    to: "/programs",
-    label: "البرامج",
-    icon: <BookOpen className="size-4" />,
-  },
-  {
-    to: "/beneficiaries",
-    label: "المستفيدين",
-    icon: <UserRoundSearch className="size-4" />,
-    permission: "view_profiles",
-  },
-  {
-    to: "/disbursement",
-    label: "التوزيع",
-    icon: <HandCoins className="size-4" />,
-    permission: "process_disbursement",
-  },
-  {
-    to: "/disbursements",
-    label: "سجل التوزيع",
-    icon: <ClipboardList className="size-4" />,
-    permission: "view_disbursements",
-  },
-  {
-    to: "/reports",
-    label: "التقارير",
-    icon: <FileSpreadsheet className="size-4" />,
-    permission: "view_reports",
-  },
-  {
-    to: "/pledge",
-    label: "إقرار وتعهد",
-    icon: <FileSignature className="size-4" />,
-    permission: "process_pledge",
-  },
-  {
-    to: "/pledges",
-    label: "سجل الإقرارات",
-    icon: <ScrollText className="size-4" />,
-    permission: "view_pledges",
-  },
-  {
-    to: "/field-config",
-    label: "إعدادات الحقول",
-    icon: <Settings className="size-4" />,
-    permission: "manage_field_config",
+    title: "التقارير والإعدادات",
+    items: [
+      {
+        to: "/reports",
+        label: "التقارير",
+        icon: <FileSpreadsheet className="size-4" />,
+        permission: "view_reports",
+      },
+      {
+        to: "/field-config",
+        label: "إعدادات الحقول",
+        icon: <Settings className="size-4" />,
+        permission: "manage_field_config",
+      },
+    ],
   },
 ]
 
@@ -118,12 +143,14 @@ export function DashboardLayout() {
         icon: <Home className="size-4" />,
       }
 
-  const visibleItems = [
-    homeItem,
-    ...navItems.filter(
-      (item) => !item.permission || auth.hasPermission(item.permission)
-    ),
-  ]
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter(
+        (item) => !item.permission || auth.hasPermission(item.permission)
+      ),
+    }))
+    .filter((group) => group.items.length > 0)
 
   return (
     <div className="flex min-h-svh">
@@ -133,23 +160,44 @@ export function DashboardLayout() {
         </div>
         <Separator />
         <nav className="flex flex-1 flex-col gap-1 p-2">
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )
-              }
-            >
-              {item.icon}
-              {item.label}
-            </NavLink>
+          <NavLink
+            to={homeItem.to}
+            end
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )
+            }
+          >
+            {homeItem.icon}
+            {homeItem.label}
+          </NavLink>
+          {visibleGroups.map((group) => (
+            <div key={group.title} className="mt-3">
+              <span className="mb-1 block px-3 text-[11px] font-medium uppercase tracking-wide text-muted-foreground/60">
+                {group.title}
+              </span>
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )
+                  }
+                >
+                  {item.icon}
+                  {item.label}
+                </NavLink>
+              ))}
+            </div>
           ))}
         </nav>
         <Separator />

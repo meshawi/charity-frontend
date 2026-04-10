@@ -1309,6 +1309,20 @@ export default function BeneficiaryDetailPage() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Floating save button */}
+      {canEdit && (
+        <div className="fixed bottom-6 end-6 z-50 print:hidden">
+          <Button onClick={handleSave} disabled={saving} size="sm" className="shadow-lg">
+            {saving ? (
+              <LoaderCircle className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            حفظ التعديلات
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
