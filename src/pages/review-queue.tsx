@@ -327,7 +327,8 @@ function ApproveDialog({
 
   React.useEffect(() => {
     if (beneficiary) {
-      setCategoryId("")
+      // Re-reviewed files (approved, then edited) keep their current category by default
+      setCategoryId(beneficiary.categoryId ? String(beneficiary.categoryId) : "")
       setNotes("")
     }
   }, [beneficiary])

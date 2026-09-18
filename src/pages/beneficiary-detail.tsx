@@ -177,6 +177,8 @@ export default function BeneficiaryDetailPage() {
   const [obligations, setObligations] = React.useState<Record<string, { monthly: number; notes: string }>>({})
   const [rentDeduction, setRentDeduction] = React.useState(0)
 
+  const lastStatusRef = React.useRef<Pick<Beneficiary, "id" | "status"> | null>(null)
+
   const loadData = React.useCallback(async () => {
     if (!id) return
     try {
@@ -187,6 +189,13 @@ export default function BeneficiaryDetailPage() {
       setBeneficiary(bRes.beneficiary)
       setCategories(cRes.categories)
       const b = bRes.beneficiary
+
+      // Editing an approved file (data, dependents or documents) sends it back to review
+      const last = lastStatusRef.current
+      if (last?.id === b.id && last.status === "approved" && b.status === "pending_review") {
+        toast.info("تم تعديل ملف معتمد — أُعيد الملف إلى قائمة المراجعة")
+      }
+      lastStatusRef.current = { id: b.id, status: b.status }
 
       const [progressRes, docTypesRes, cfgRes, depCfgRes] = await Promise.all([
         beneficiariesApi.getProgress(Number(id)).catch(() => null),
