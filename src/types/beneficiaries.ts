@@ -113,8 +113,11 @@ export type Document = {
   id: number
   beneficiaryId: number
   type: string
-  name: string
-  url: string
+  /** Arabic label of the type, resolved by the API */
+  typeLabel: string
+  /** Set only when type is "other" */
+  title: string | null
+  originalName: string
   notes: string | null
   createdAt: string
 }

@@ -126,12 +126,14 @@ export async function uploadDocument(
   beneficiaryId: number,
   file: File,
   type: string,
-  notes?: string
+  { title, notes }: { title?: string; notes?: string } = {}
 ) {
+  // Text fields go first so the server has them when it receives the file
   const formData = new FormData()
-  formData.append("file", file)
   formData.append("type", type)
+  if (title) formData.append("title", title)
   if (notes) formData.append("notes", notes)
+  formData.append("file", file)
 
   const response = await fetch(
     `${API_BASE_URL}/beneficiaries/${beneficiaryId}/documents`,

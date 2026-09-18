@@ -101,6 +101,8 @@ import {
   initIncome,
   initObligations,
   initReligious,
+  OTHER_DOCUMENT_TYPE,
+  getDocumentLabel,
 } from "@/lib/beneficiary-constants"
 
 // ===========================================================================
@@ -1128,20 +1130,24 @@ export default function BeneficiaryDetailPage() {
               </TableHeader>
               <TableBody>
                 {beneficiary.documents.map((doc) => {
-                  const docType = documentTypes.find((t) => t.key === doc.type)
                   const viewUrl = beneficiariesApi.getDocumentViewUrl(beneficiary.id, doc.id)
                   return (
                     <TableRow key={doc.id}>
                       <TableCell className="font-medium">
-                        {docType?.label || doc.type || "—"}
+                        <div className="flex items-center gap-2">
+                          {getDocumentLabel(doc)}
+                          {doc.type === OTHER_DOCUMENT_TYPE && (
+                            <Badge variant="outline">{doc.typeLabel}</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         <button
                           type="button"
                           className="text-primary underline text-start"
-                          onClick={() => setPreviewDoc({ name: doc.name, url: viewUrl })}
+                          onClick={() => setPreviewDoc({ name: doc.originalName, url: viewUrl })}
                         >
-                          {doc.name}
+                          {doc.originalName}
                         </button>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{doc.notes || "—"}</TableCell>
@@ -1153,7 +1159,7 @@ export default function BeneficiaryDetailPage() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            onClick={() => setPreviewDoc({ name: doc.name, url: viewUrl })}
+                            onClick={() => setPreviewDoc({ name: doc.originalName, url: viewUrl })}
                             title="عرض"
                           >
                             <Eye className="size-4" />
@@ -1287,6 +1293,7 @@ export default function BeneficiaryDetailPage() {
         open={uploadOpen}
         onOpenChange={setUploadOpen}
         onSuccess={loadData}
+        existingTypes={beneficiary.documents?.map((d) => d.type) ?? []}
       />
 
       {/* Document Preview Dialog */}

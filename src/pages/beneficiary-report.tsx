@@ -41,6 +41,8 @@ import {
   OBLIGATION_KEYS,
   RELIGIOUS_KEYS,
   DEP_RELIGIOUS_KEYS,
+  OTHER_DOCUMENT_TYPE,
+  getDocumentLabel,
 } from "@/lib/beneficiary-constants"
 
 export default function BeneficiaryReportPage() {
@@ -358,8 +360,11 @@ export default function BeneficiaryReportPage() {
               <TableBody>
                 {beneficiary.documents.map((doc) => (
                   <TableRow key={doc.id}>
-                    <TableCell className="font-medium">{doc.type || "—"}</TableCell>
-                    <TableCell>{doc.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {getDocumentLabel(doc)}
+                      {doc.type === OTHER_DOCUMENT_TYPE && ` (${doc.typeLabel})`}
+                    </TableCell>
+                    <TableCell>{doc.originalName}</TableCell>
                     <TableCell className="text-muted-foreground">{doc.notes || "—"}</TableCell>
                     <TableCell><DualDate value={doc.createdAt} /></TableCell>
                   </TableRow>

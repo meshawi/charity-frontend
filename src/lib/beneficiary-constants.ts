@@ -9,7 +9,18 @@ import type {
   ObligationItem,
   DependentReligious,
   DependentReligiousItem,
+  Document,
 } from "@/types/beneficiaries"
+
+// --- Documents ---
+
+/** Free-form document type: needs a title, and a file can hold many of them */
+export const OTHER_DOCUMENT_TYPE = "other"
+
+/** What a document is called in lists: its title for "other", otherwise its type */
+export function getDocumentLabel(doc: Pick<Document, "type" | "typeLabel" | "title">) {
+  return (doc.type === OTHER_DOCUMENT_TYPE && doc.title) || doc.typeLabel || doc.type || "—"
+}
 
 // --- Label Maps ---
 

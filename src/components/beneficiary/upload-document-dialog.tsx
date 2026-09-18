@@ -2,6 +2,7 @@ import * as React from "react"
 import * as beneficiariesApi from "@/lib/beneficiaries-api"
 import type { DocumentType } from "@/types/beneficiaries"
 import { ApiError } from "@/lib/api-client"
+import { OTHER_DOCUMENT_TYPE } from "@/lib/beneficiary-constants"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,26 +27,36 @@ import { LoaderCircle } from "lucide-react"
 export function UploadDocumentDialog({
   beneficiaryId,
   documentTypes,
+  existingTypes,
   open,
   onOpenChange,
   onSuccess,
 }: {
   beneficiaryId: number
   documentTypes: DocumentType[]
+  /** Types of the documents already on this file */
+  existingTypes: string[]
   open: boolean
   onOpenChange: (open: boolean) => void
   onSuccess: () => void
 }) {
   const [file, setFile] = React.useState<File | null>(null)
   const [docType, setDocType] = React.useState("")
+  const [title, setTitle] = React.useState("")
   const [notes, setNotes] = React.useState("")
   const [submitting, setSubmitting] = React.useState(false)
   const fileRef = React.useRef<HTMLInputElement>(null)
+
+  const isOther = docType === OTHER_DOCUMENT_TYPE
+  const canSubmit = !!file && !!docType && (!isOther || !!title.trim())
+  // Fixed types hold one document each — a second upload replaces the first
+  const willReplace = !isOther && existingTypes.includes(docType)
 
   React.useEffect(() => {
     if (open) {
       setFile(null)
       setDocType("")
+      setTitle("")
       setNotes("")
       if (fileRef.current) fileRef.current.value = ""
     }
@@ -53,15 +64,13 @@ export function UploadDocumentDialog({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!file || !docType) return
+    if (!file || !canSubmit) return
     setSubmitting(true)
     try {
-      await beneficiariesApi.uploadDocument(
-        beneficiaryId,
-        file,
-        docType,
-        notes || undefined
-      )
+      await beneficiariesApi.uploadDocument(beneficiaryId, file, docType, {
+        title: isOther ? title.trim() : undefined,
+        notes: notes.trim() || undefined,
+      })
       toast.success("تم رفع المستند بنجاح")
       onOpenChange(false)
       onSuccess()
@@ -96,7 +105,26 @@ export function UploadDocumentDialog({
                 ))}
               </SelectContent>
             </Select>
+            {willReplace && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                يوجد مستند سابق من هذا النوع وسيتم استبداله. لإضافة مستند إضافي اختر «أخرى».
+              </span>
+            )}
           </div>
+          {isOther && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="doc-title">عنوان المستند</Label>
+              <Input
+                id="doc-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="مثال: عقد إيجار، نسخة إضافية من الهوية"
+                maxLength={150}
+                autoFocus
+                required
+              />
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <Label>الملف</Label>
             <Input
@@ -118,7 +146,7 @@ export function UploadDocumentDialog({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               إلغاء
             </Button>
-            <Button type="submit" disabled={submitting || !file || !docType}>
+            <Button type="submit" disabled={submitting || !canSubmit}>
               {submitting && <LoaderCircle className="animate-spin" />}
               رفع
             </Button>
