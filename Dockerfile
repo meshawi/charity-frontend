@@ -8,7 +8,13 @@ RUN npm ci
 
 COPY . .
 
-ENV VITE_API_URL=$VITE_API_URL
+# Vite inlines these into the bundle at build time, so they must be passed as
+# build arguments (in Coolify: environment variables marked "Build Variable").
+ARG VITE_API_URL
+ARG VITE_BRAND_NAME
+ARG VITE_BRAND_DESCRIPTION
+ARG VITE_DEV_NAME
+ARG VITE_DEV_URL
 
 RUN npm run build
 
