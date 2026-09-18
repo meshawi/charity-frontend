@@ -1,6 +1,8 @@
 import * as React from "react"
 import * as dependentsApi from "@/lib/dependents-api"
+import * as schoolsApi from "@/lib/schools-api"
 import type { Dependent, DependentReligious } from "@/types/beneficiaries"
+import type { School } from "@/types/schools"
 import type { FieldConfigItem } from "@/lib/field-config-api"
 import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
@@ -26,6 +28,9 @@ import {
   defaultDependentReligiousItem,
   initDependentReligious,
 } from "@/lib/beneficiary-constants"
+
+// Select items can't have an empty value, so "no school" gets a placeholder one
+const NO_SCHOOL = "__none__"
 
 export function DependentFormSection({
   beneficiaryId,
@@ -62,6 +67,22 @@ export function DependentFormSection({
   const [customFields, setCustomFields] = React.useState<Record<string, unknown>>(dependent?.customFields ?? {})
   const [submitting, setSubmitting] = React.useState(false)
 
+  // Managed schools list — the only source for a dependent's school
+  const [schools, setSchools] = React.useState<School[]>([])
+  const [schoolsLoaded, setSchoolsLoaded] = React.useState(false)
+
+  React.useEffect(() => {
+    schoolsApi
+      .getSchools()
+      .then((res) => setSchools(res.schools))
+      .catch(() => toast.error("حدث خطأ في تحميل قائمة المدارس"))
+      .finally(() => setSchoolsLoaded(true))
+  }, [])
+
+  // A name typed before the list existed, or whose school was later removed from it
+  const isUnlistedSchool =
+    schoolsLoaded && !!schoolName && !schools.some((s) => s.name === schoolName)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSubmitting(true)
@@ -74,7 +95,7 @@ export function DependentFormSection({
         relationship: (relationship as "son" | "daughter" | "other") || undefined,
         relationshipOther: relationship === "other" ? relationshipOther || undefined : undefined,
         dependentMaritalStatus: dependentMaritalStatus || undefined,
-        schoolName: schoolName || undefined,
+        schoolName: schoolName || null,
         schoolGrade: schoolGrade || undefined,
         schoolType: (schoolType as "public" | "private" | "other") || undefined,
         schoolTypeOther: schoolType === "other" ? schoolTypeOther || undefined : undefined,
@@ -170,8 +191,27 @@ export function DependentFormSection({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="dep-school">اسم المدرسة</Label>
-            <Input id="dep-school" value={schoolName} onChange={(e) => setSchoolName(e.target.value)} />
+            <Label>اسم المدرسة</Label>
+            <Select
+              value={schoolName || NO_SCHOOL}
+              onValueChange={(v) => setSchoolName(v === NO_SCHOOL ? "" : v)}
+            >
+              <SelectTrigger className="w-full"><SelectValue placeholder="اختر" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SCHOOL}>بدون مدرسة</SelectItem>
+                {isUnlistedSchool && (
+                  <SelectItem value={schoolName}>{schoolName} (غير موجودة في القائمة)</SelectItem>
+                )}
+                {schools.map((s) => (
+                  <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isUnlistedSchool && (
+              <span className="text-xs text-amber-600 dark:text-amber-400">
+                هذه المدرسة لم تعد ضمن قائمة المدارس — يمكنك إبقاؤها أو اختيار مدرسة من القائمة
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="dep-grade">الصف الدراسي</Label>

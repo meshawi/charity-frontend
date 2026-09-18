@@ -19,6 +19,7 @@ import {
   Settings,
   FileSignature,
   ScrollText,
+  School,
 } from "lucide-react"
 
 type NavItem = {
@@ -122,6 +123,12 @@ const navGroups: NavGroup[] = [
         to: "/field-config",
         label: "إعدادات الحقول",
         icon: <Settings className="size-4" />,
+        permission: "manage_field_config",
+      },
+      {
+        to: "/schools",
+        label: "المدارس",
+        icon: <School className="size-4" />,
         permission: "manage_field_config",
       },
     ],

@@ -305,7 +305,8 @@ export type CreateDependentRequest = {
   relationship?: "son" | "daughter" | "wife" | "other"
   relationshipOther?: string
   dependentMaritalStatus?: string
-  schoolName?: string
+  /** A name from the managed schools list; null clears it */
+  schoolName?: string | null
   schoolGrade?: string
   schoolType?: "public" | "private" | "other"
   schoolTypeOther?: string
