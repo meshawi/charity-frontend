@@ -11,7 +11,7 @@ import type {
 } from "@/types/dashboard"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { formatDateShort } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 import {
   Card,
@@ -430,7 +430,7 @@ export default function DashboardPage() {
                           {p.createdBy.name}
                         </TableCell>
                         <TableCell className="text-muted-foreground">
-                          {formatDateShort(p.createdAt)}
+                          <DualDate value={p.createdAt} withYear={false} />
                         </TableCell>
                       </TableRow>
                     ))}

@@ -21,6 +21,8 @@ import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DateInput } from "@/components/ui/date-input"
+import { DualDate } from "@/components/dual-date"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
@@ -576,7 +578,7 @@ export default function BeneficiaryDetailPage() {
             </Select>
           </Field>
           <Field label="تاريخ الميلاد">
-            <Input type="date" value={form.dateOfBirth} onChange={(e) => updateField("dateOfBirth", e.target.value)} disabled={!canEdit} />
+            <DateInput value={form.dateOfBirth} onChange={(v) => updateField("dateOfBirth", v)} disabled={!canEdit} />
             {(beneficiary.age != null || calculateAge(form.dateOfBirth) != null) && (
               <span className="text-xs text-muted-foreground">
                 العمر: {beneficiary.age ?? calculateAge(form.dateOfBirth)} سنة
@@ -928,13 +930,13 @@ export default function BeneficiaryDetailPage() {
         </div>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="تاريخ الزيارة الأولى">
-            <Input type="date" value={form.firstVisitDate} onChange={(e) => updateField("firstVisitDate", e.target.value)} disabled={!canEdit} />
+            <DateInput value={form.firstVisitDate} onChange={(v) => updateField("firstVisitDate", v)} disabled={!canEdit} />
           </Field>
           <Field label="تاريخ التحديث">
-            <Input type="date" value={form.updateDate} onChange={(e) => updateField("updateDate", e.target.value)} disabled={!canEdit} />
+            <DateInput value={form.updateDate} onChange={(v) => updateField("updateDate", v)} disabled={!canEdit} />
           </Field>
           <Field label="التحديث القادم">
-            <Input type="date" value={form.nextUpdate} onChange={(e) => updateField("nextUpdate", e.target.value)} disabled={!canEdit} />
+            <DateInput value={form.nextUpdate} onChange={(v) => updateField("nextUpdate", v)} disabled={!canEdit} />
           </Field>
         </div>
         <div className="mt-4 flex items-center gap-3">
@@ -997,11 +999,10 @@ export default function BeneficiaryDetailPage() {
                     />
                   )}
                   {cfg.fieldType === "date" && (
-                    <Input
-                      type="date"
+                    <DateInput
                       value={(customFields[cfg.fieldName] as string) ?? ""}
-                      onChange={(e) =>
-                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      onChange={(v) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
                       }
                       disabled={!canEdit}
                     />
@@ -1136,7 +1137,7 @@ export default function BeneficiaryDetailPage() {
                       </TableCell>
                       <TableCell className="text-muted-foreground">{doc.notes || "—"}</TableCell>
                       <TableCell>
-                        {formatDate(doc.createdAt)}
+                        <DualDate value={doc.createdAt} />
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
@@ -1203,7 +1204,7 @@ export default function BeneficiaryDetailPage() {
                 {beneficiary.disbursements.map((d: BeneficiaryDisbursement) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.program.name}</TableCell>
-                    <TableCell>{formatDate(d.disbursedAt)}</TableCell>
+                    <TableCell><DualDate value={d.disbursedAt} /></TableCell>
                     <TableCell>{d.disbursedBy.name}</TableCell>
                     <TableCell>{d.receiverName || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{d.notes || "—"}</TableCell>

@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/auth-context"
 import * as pledgesApi from "@/lib/pledges-api"
 import type { PledgeListItem, Pagination } from "@/types/pledges"
 import { ApiError } from "@/lib/api-client"
-import { formatDateTime } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -178,7 +178,7 @@ export default function PledgesPage() {
                     {p.pledgeYear}
                   </TableCell>
                   <TableCell className="text-sm">
-                    {formatDateTime(p.signedAt)}
+                    <DualDate value={p.signedAt} withTime />
                   </TableCell>
                   <TableCell className="text-sm">
                     {p.processedBy.name}

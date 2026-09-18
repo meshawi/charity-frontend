@@ -6,6 +6,7 @@ import type {
 } from "@/types/reports"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DateInput } from "@/components/ui/date-input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -493,11 +494,7 @@ function FilterValueInput({
   // Date
   if (field.type === "date") {
     return (
-      <Input
-        type="date"
-        value={String(value ?? "")}
-        onChange={(e) => onChange(e.target.value)}
-      />
+      <DateInput value={String(value ?? "")} onChange={onChange} />
     )
   }
 

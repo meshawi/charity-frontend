@@ -6,10 +6,11 @@ import * as categoriesApi from "@/lib/categories-api"
 import type { Program } from "@/types/programs"
 import type { Category } from "@/types/categories"
 import { ApiError } from "@/lib/api-client"
-import { formatDate } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DateInput } from "@/components/ui/date-input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
@@ -167,10 +168,10 @@ export default function ProgramsPage() {
                   </div>
                 </TableCell>
                 <TableCell>
-                  {formatDate(program.startDate)}
+                  <DualDate value={program.startDate} />
                 </TableCell>
                 <TableCell>
-                  {formatDate(program.endDate)}
+                  <DualDate value={program.endDate} />
                 </TableCell>
                 <TableCell>
                   <Badge
@@ -416,25 +417,21 @@ function ProgramFormDialog({
               )}
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="prog-start">تاريخ البدء</Label>
-              <Input
+              <DateInput
                 id="prog-start"
-                type="date"
-                dir="ltr"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={setStartDate}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="prog-end">تاريخ الانتهاء</Label>
-              <Input
+              <DateInput
                 id="prog-end"
-                type="date"
-                dir="ltr"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={setEndDate}
               />
             </div>
           </div>

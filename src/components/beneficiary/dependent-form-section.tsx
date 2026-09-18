@@ -6,6 +6,7 @@ import { ApiError } from "@/lib/api-client"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { DateInput } from "@/components/ui/date-input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
@@ -134,7 +135,7 @@ export function DependentFormSection({
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="dep-dob">تاريخ الميلاد</Label>
-            <Input id="dep-dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+            <DateInput id="dep-dob" value={dateOfBirth} onChange={setDateOfBirth} />
           </div>
           <div className="flex flex-col gap-1.5">
             <Label>صلة القرابة</Label>
@@ -251,13 +252,12 @@ export function DependentFormSection({
                   {item.done && (
                     <div className="flex flex-col gap-1 pr-11">
                       <Label className="text-xs">تاريخ الزيارة</Label>
-                      <Input
-                        type="date"
+                      <DateInput
                         value={item.visitDate ?? ""}
-                        onChange={(e) =>
+                        onChange={(v) =>
                           setReligious((prev) => ({
                             ...prev,
-                            [key]: { ...prev[key], visitDate: e.target.value || undefined },
+                            [key]: { ...prev[key], visitDate: v || undefined },
                           }))
                         }
                       />
@@ -298,11 +298,10 @@ export function DependentFormSection({
                     />
                   )}
                   {cfg.fieldType === "date" && (
-                    <Input
-                      type="date"
+                    <DateInput
                       value={(customFields[cfg.fieldName] as string) ?? ""}
-                      onChange={(e) =>
-                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: e.target.value }))
+                      onChange={(v) =>
+                        setCustomFields((prev) => ({ ...prev, [cfg.fieldName]: v }))
                       }
                     />
                   )}

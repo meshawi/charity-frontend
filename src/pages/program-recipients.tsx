@@ -6,7 +6,7 @@ import type {
   ProgramRecipientBeneficiary,
 } from "@/types/disbursements"
 import { ApiError } from "@/lib/api-client"
-import { formatDate } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -253,9 +253,7 @@ function BeneficiariesTable({
               )}
               {filter === "received" && (
                 <TableCell>
-                  {b.disbursement
-                    ? formatDate(b.disbursement.disbursedAt)
-                    : "—"}
+                  <DualDate value={b.disbursement?.disbursedAt} />
                 </TableCell>
               )}
               {filter === "received" && (

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Switch } from "@/components/ui/switch"
-import { Input } from "@/components/ui/input"
+import { DateInput } from "@/components/ui/date-input"
 import { Label } from "@/components/ui/label"
 import type { ReligiousVisits } from "@/types/beneficiaries"
 import { RELIGIOUS_KEYS, defaultReligiousItem } from "@/lib/beneficiary-constants"
@@ -42,10 +42,9 @@ export function ReligiousSection({
               {item.done && (
                 <div className="flex flex-col gap-1 pr-11">
                   <Label className="text-xs">تاريخ الزيارة</Label>
-                  <Input
-                    type="date"
+                  <DateInput
                     value={item.visitDate ?? ""}
-                    onChange={(e) => updateItem(key, "visitDate", e.target.value || undefined)}
+                    onChange={(v) => updateItem(key, "visitDate", v || undefined)}
                     disabled={disabled}
                   />
                 </div>

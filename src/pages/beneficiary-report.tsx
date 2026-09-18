@@ -11,6 +11,7 @@ import type {
 } from "@/types/beneficiaries"
 import { GENDER_LABELS, STATUS_LABELS, STATUS_COLORS } from "@/lib/constants"
 import { formatDate } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
@@ -133,7 +134,7 @@ export default function BeneficiaryReportPage() {
           <ViewField label="الاسم" value={beneficiary.name} />
           <ViewField label="رقم الهوية" value={beneficiary.nationalId} />
           <ViewField label="الجنس" value={beneficiary.gender ? GENDER_LABELS[beneficiary.gender] : null} />
-          <ViewField label="تاريخ الميلاد" value={beneficiary.dateOfBirth ? `${beneficiary.dateOfBirth}${beneficiary.age != null ? ` (${beneficiary.age} سنة)` : ""}` : null} />
+          <ViewField label="تاريخ الميلاد" value={beneficiary.dateOfBirth ? `${formatDate(beneficiary.dateOfBirth)}${beneficiary.age != null ? ` (${beneficiary.age} سنة)` : ""}` : null} />
           <ViewField label="الحالة الاجتماعية" value={beneficiary.maritalStatus ? MARITAL_LABELS[beneficiary.maritalStatus] : null} />
           <ViewField label="الهاتف" value={beneficiary.phone} />
           <ViewField label="هاتف آخر" value={beneficiary.otherPhone} />
@@ -253,7 +254,7 @@ export default function BeneficiaryReportPage() {
                   {item?.done ? "نعم" : "لا"}
                 </span>
                 {item?.done && item.visitDate && (
-                  <span className="text-xs text-muted-foreground">{item.visitDate}</span>
+                  <span className="text-xs text-muted-foreground">{formatDate(item.visitDate)}</span>
                 )}
               </div>
             )
@@ -360,7 +361,7 @@ export default function BeneficiaryReportPage() {
                     <TableCell className="font-medium">{doc.type || "—"}</TableCell>
                     <TableCell>{doc.name}</TableCell>
                     <TableCell className="text-muted-foreground">{doc.notes || "—"}</TableCell>
-                    <TableCell>{formatDate(doc.createdAt)}</TableCell>
+                    <TableCell><DualDate value={doc.createdAt} /></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -387,7 +388,7 @@ export default function BeneficiaryReportPage() {
                 {beneficiary.disbursements.map((d: BeneficiaryDisbursement) => (
                   <TableRow key={d.id}>
                     <TableCell className="font-medium">{d.program.name}</TableCell>
-                    <TableCell>{formatDate(d.disbursedAt)}</TableCell>
+                    <TableCell><DualDate value={d.disbursedAt} /></TableCell>
                     <TableCell>{d.disbursedBy.name}</TableCell>
                     <TableCell>{d.receiverName || "—"}</TableCell>
                     <TableCell className="text-muted-foreground">{d.notes || "—"}</TableCell>
@@ -441,7 +442,7 @@ function DependentReport({ dep, index, customConfigs }: { dep: Dependent; index:
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <ViewField label="رقم الهوية" value={dep.nationalId} />
-        <ViewField label="تاريخ الميلاد" value={dep.dateOfBirth} />
+        <ViewField label="تاريخ الميلاد" value={dep.dateOfBirth ? formatDate(dep.dateOfBirth) : null} />
         <ViewField label="العمر" value={dep.age != null ? String(dep.age) : null} />
         <ViewField label="الحالة الاجتماعية" value={dep.dependentMaritalStatus || null} />
       </div>
@@ -484,7 +485,7 @@ function DependentReport({ dep, index, customConfigs }: { dep: Dependent; index:
               return (
                 <div key={key} className="flex items-center gap-2">
                   <span className="text-xs text-green-600 font-medium">✓ {label}</span>
-                  {item.visitDate && <span className="text-xs text-muted-foreground">({item.visitDate})</span>}
+                  {item.visitDate && <span className="text-xs text-muted-foreground">({formatDate(item.visitDate)})</span>}
                 </div>
               )
             })}

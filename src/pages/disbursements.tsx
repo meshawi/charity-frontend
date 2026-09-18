@@ -7,7 +7,7 @@ import type {
   ActiveProgram,
 } from "@/types/disbursements"
 import { ApiError } from "@/lib/api-client"
-import { formatDateTime } from "@/lib/date-utils"
+import { DualDate } from "@/components/dual-date"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -202,7 +202,7 @@ export default function DisbursementsPage() {
                     <Badge variant="secondary">{d.program.name}</Badge>
                   </TableCell>
                   <TableCell className="text-sm">
-                    {formatDateTime(d.disbursedAt)}
+                    <DualDate value={d.disbursedAt} withTime />
                   </TableCell>
                   <TableCell className="text-sm">
                     {d.disbursedBy.name}
@@ -335,7 +335,7 @@ function DisbursementDetailDialog({
               <div className="text-muted-foreground">البرنامج</div>
               <div>{disbursement.program.name}</div>
               <div className="text-muted-foreground">تاريخ الصرف</div>
-              <div>{formatDateTime(disbursement.disbursedAt)}</div>
+              <DualDate value={disbursement.disbursedAt} withTime />
               <div className="text-muted-foreground">الموظف</div>
               <div>{disbursement.disbursedBy.name}</div>
               {disbursement.receiverName && (
